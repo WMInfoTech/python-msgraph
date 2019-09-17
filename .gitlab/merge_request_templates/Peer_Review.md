@@ -1,23 +1,54 @@
 To Request a Peer Review
 ========================
-
- - The title of the merge request should contain the ticket number and ticket description.  
- - Provide a brief description of the package or change.  
+ - This merge request should be from your feature branch to the Master branch.  
+ - The title of the merge request should contain the ticket number and a REALLY short description.  
+ - "Description" -- Provide a brief description of the change.  
+ - "Deployment for Testing Instructions" -- Update the instructions for deploying this package change to a non-production environment.  
+ - "Testing Plan" -- Briefly describe how this change will be tested.  
+ - "Related Projects" -- If this merge is dependent any other project merge, add it under cross-project dependencies
+ - "Deployment to Production Instructions" -- Update the instructions for deploying this to production.  These can be updated after testing if needed.  
+ - "Approval" -- Upon completion of testing, look up the production approval in the [eis_change_management](https://gitlab.wm.edu/eis_change_management/eis_change_management/issues) project under issues and edit this description to add the issue number next to the "#" below.  If you received multiple approvals, list them all with "Close " in front of each.  
+ - "Rollback Plan" -- Update the rollback plan if needed.  
  - Upon submission, the label ~"Peer Review" will be applied.  
  - Be sure to assign the merge request to the developer you would like to review your code.  
- - This merge request should be from your feature branch to the master branch.  
- - Complete the deployment for testing instructions with specific commands as needed.  
+ - You can delete any sections not applicable to this project.  
  - You can delete from here up once you have completed the instructions above.  
+
 
 Description
 ===========
-Provide a description of the change to the package here. 
+-- Describe this change. --  
+
 
 Deployment for Testing Instructions
 ==================================
-```python
+```bash
 python -m pip install --upgrade --user git+ssh://git@code.wm.edu/IT/software-systems/eispippackages/msgraph.git@test
 ```
+
+
+Testing Plan
+======================
+-- Describe how the change will be tested. --  
+
+
+Deployment to Production Instructions
+==================================
+```bash
+python -m pip install --upgrade git+ssh://git@code.wm.edu/IT/software-systems/eispippackages/msgraph.git
+```
+
+
+Approval
+=============
+-- Obtained after testing is complete --  
+Approval == Close eis_change_management/eis_change_management#
+
+
+Rollback Plan 
+=============
+Revert to the previous version. 
+
 
 Peer Reviewer
 =============
@@ -43,5 +74,7 @@ If you see any issues with the points below, submit as a conversation describing
 * [ ] `setup.py`
   - Package version should be incremented to denote a new version/update to the package.
   - The package url should be up-to-date, denoting where the package can be currently found.
+  - The `setup` function call should include a `install_requires` parameter listing the required packages for this package
 
 /label ~"Peer Review"
+
