@@ -348,9 +348,9 @@ class DateTime(object):
 
 
 class Event(object):
-    __slots__ = ('id', 'ical_uid', 'series_master_id', 'type', 'categories', 'subject', 'body', 'body_preview', 'attendees', 'locations', 'location', 'start', 'original_start', 'original_start_time_zone', 'end', 'original_end', 'original_end_time_zone', 'is_all_day', 'is_cancelled', 'is_reminder_on', 'is_organizer', 'organizer', 'importance', 'sensitivity', 'recurrence', 'response_requested', 'response_status', 'reminder_minutes_before_start', 'show_as', 'online_meeting_url', 'web_link', 'has_attachments', 'attachments', 'calendar', 'extensions', 'instances', 'multi_value_extended_properties', 'single_value_extended_properties', 'created_at', 'last_modified')
+    __slots__ = ('id', 'ical_uid', 'series_master_id', 'type', 'categories', 'subject', 'body', 'body_preview', 'attendees', 'locations', 'location', 'start', 'original_start', 'original_start_time_zone', 'end', 'original_end', 'original_end_time_zone', 'is_all_day', 'is_cancelled', 'is_reminder_on', 'is_organizer', 'organizer', 'importance', 'sensitivity', 'recurrence', 'response_requested', 'response_status', 'reminder_minutes_before_start', 'show_as', 'online_meeting_url', 'web_link', 'has_attachments', 'attachments', 'calendar', 'extensions', 'instances', 'multi_value_extended_properties', 'single_value_extended_properties', 'created_at', 'last_modified', 'removed')
 
-    def __init__(self, id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified):
+    def __init__(self, id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified, removed):
         self.id = id
         self.ical_uid = ical_uid
         self.series_master_id = series_master_id
@@ -391,6 +391,7 @@ class Event(object):
         self.single_value_extended_properties = single_value_extended_properties
         self.created_at = created_at
         self.last_modified = last_modified
+        self.removed = removed
 
     def __hash__(self):
         return hash((self.id))
@@ -494,7 +495,7 @@ class Event(object):
         ical_uid = data.get('ical_uid')
         series_master_id = data['seriesMasterId']
         type = data['type']
-        categories = data['categories']
+        categories = data.get('categories', [])
         subject = data['subject']
         body = data['body']
         body_preview = data['bodyPreview']
@@ -533,8 +534,28 @@ class Event(object):
         single_value_extended_properties = data.get('singleValueExtendedProperties', [])
         created_at = parse_date_times(data['createdDateTime'][:26])
         last_modified = parse_date_times(data['lastModifiedDateTime'][:26])
+        removed = data.get('@removed')
+        return cls(id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified, removed)
 
-        return cls(id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified)
+    @classmethod
+    def delta(cls, api, start, end, **kwargs):
+        user = kwargs.get('user')
+        start_formatted = start.strftime(datetime_format)
+        end_formatted = end.strftime(datetime_format)
+        if user:
+            uri = 'users/%s/calendarView/delta' % user
+        else:
+            uri = 'me/calendarView/delta'
+        params = dict(startDateTime=start_formatted, endDateTime=end_formatted)
+        data = api.request(uri, params=params)
+
+        output = [cls.from_api(row) for row in data.get('value', [])]
+        while data.get("@odata.nextLink"):
+            uri = data.get("@odata.nextLink")
+            data = api.request(uri)
+            output += [cls.from_api(row) for row in data.get('value', [])]
+        delta_link = data['@odata.deltaLink']
+        return output, delta_link
 
     @classmethod
     def get(cls, api, **kwargs):
