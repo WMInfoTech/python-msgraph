@@ -143,11 +143,18 @@ class Group(object):
         Parameters:
             api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
 
+        Keyword Arguments:
+            page_size (int):  The number of items to include in each page, default: 100
+
         Returns:
             (list):  Group instances
         """
         uri = 'groups'
-        data = api.request(uri)
+
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")

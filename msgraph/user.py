@@ -154,6 +154,9 @@ class User(object):
             api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
             user (str, optional):  The User Principal Name for which to fetch data
 
+        Keyword Arguments:
+            page_size (int):  The number of User instances to include in each page, default: 100
+
         Returns:
             (list|User):  If a user specified, the requested User instance, otherwise a list of User instances
         """
@@ -161,8 +164,11 @@ class User(object):
             uri = 'users/%s' % user
         else:
             uri = 'users'
-        data = api.request(uri)
 
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         if user:
             output = cls.from_api(data)
         else:

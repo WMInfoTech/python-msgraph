@@ -106,6 +106,7 @@ class Calendar(object):
         Keyword Arguments:
             user (msgraph.user.User):  The User instance to fetch the Calendar for
             group (Group):  The group for which to fetch the Calendar for
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list: Calendar instances
@@ -121,7 +122,11 @@ class Calendar(object):
             uri += 'calendarGroup/%s/calendars' % group
         else:
             uri += 'calendars'
-        data = api.request(uri)
+
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")
@@ -249,13 +254,16 @@ class Category(object):
         return cls(id, display_name, color)
 
     @classmethod
-    def get(cls, api, user=None):
+    def get(cls, api, user=None, **kwargs):
         """
         Fetch the Categories from the API endpoint
 
         Parameters:
             api (msgraph.api.GraphAPI):  The endpoint from which to fetch Category instances from
             user (msgraph.user.User):  The User instance to fetch the Category from
+
+        Keyword Arguments:
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list: Category instances
@@ -264,7 +272,11 @@ class Category(object):
             uri = 'users/%s/output/masterCategories'
         else:
             uri = 'me/outlook/masterCategories'
-        data = api.request(uri)
+
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")
@@ -569,6 +581,7 @@ class Event(object):
             user (msgraph.user.User):  The User instance for which to fetch Events for
             group (Group):  The Group for which to fetch Events for
             calendar (Calendar):  The Calendar for which to fetch Events for
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list: Event instances
@@ -593,6 +606,7 @@ class Event(object):
         uri += 'events'
 
         parameters = dict()
+        parameters['$top'] = kwargs.get('page_size', 100)
         if start:
             parameters['startDateTime'] = start.isoformat()
         if end:
@@ -749,13 +763,16 @@ class Group(object):
         logger.debug('Deleted %r in %r', self, api)
 
     @classmethod
-    def get(cls, api, user=None):
+    def get(cls, api, user=None, **kwargs):
         """
         Fetch the Groups from the API endpoint
 
         Parameters:
             api (msgraph.api.GraphAPI):  The endpoint in which to create the Group instance
             user (msgraph.user.User):  The User instance to create the Group for
+
+        Keyword Arguments:
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list:  Group instances
@@ -764,7 +781,11 @@ class Group(object):
             uri = 'users/%s/calendarGroups' % user
         else:
             uri = 'me/calendarGroups'
-        data = api.request(uri)
+
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")
@@ -851,6 +872,7 @@ class Attachment(object):
 
         Keyword Arguments:
             user (msgraph.user.User):  The User instance to fetch the Attachment for
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list:  Attachments instances
@@ -860,7 +882,10 @@ class Attachment(object):
             uri = 'users/%s/events/%s/attachments' % (user, event)
         else:
             uri = 'me/events/%s/attachments' % event
-        data = api.request(uri)
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")
