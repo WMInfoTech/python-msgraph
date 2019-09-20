@@ -551,6 +551,23 @@ class Event(object):
 
     @classmethod
     def delta(cls, api, start, end, **kwargs):
+        """
+        Fetch the Events from the API endpoint
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint in which to create the Group instance
+            start (datetime):  The lower bound of the datetime range
+            end (datetime):  The upper bound of the datetime range
+
+        Keyword Parameters:
+            user (msgraph.user.User):  The User instance for which to fetch Events for
+            group (Group):  The Group for which to fetch Events for
+            calendar (Calendar):  The Calendar for which to fetch Events for
+            page_size (int):  The number of items to include in each page, default: 100
+
+        Returns:
+            list: Event instances
+        """
         user = kwargs.get('user')
         start_formatted = start.strftime(datetime_format)
         end_formatted = end.strftime(datetime_format)
