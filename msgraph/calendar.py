@@ -7,11 +7,12 @@ logger = logging.getLogger(__name__)
 date_format = '%Y-%m-%d'
 datetime_format = date_format + 'T%H:%M:%S'
 full_datetime_format = date_format + 'T%H:%M:%S.%f'
+extended_datetime_format = date_format + 'T%H:%M:%S.%fZ'
 
 
 def parse_date_times(text):
     instance = None
-    for format in [full_datetime_format, datetime_format, date_format]:
+    for format in [extended_datetime_format, full_datetime_format, datetime_format, date_format]:
         try:
             instance = datetime.strptime(text, format)
         except Exception:
@@ -148,7 +149,7 @@ class Location(object):
         return '<%s %s display_name=%r, location_type=%r, unique_id_type=%r>' % (self.__class__.__name__, id(self), self.display_name, self.location_type, self.unique_id_type)
 
     def to_dict(self):
-        return dict(displayName=self.display_name, locationType=self.location_type, unique_id=self.unique_id, uniqueIdType=self.unique_id_type)
+        return dict(displayName=self.display_name, locationType=self.location_type)
 
     @classmethod
     def from_api(cls, data):
@@ -446,6 +447,8 @@ class Event(object):
                 uri = 'users/%s/calendars/%s/events/%s' % (user, calendar, self.id)
             elif group and calendar:
                 uri = 'users/%s/calendargroups/%s/calendars/%s/events/%s' % (user, group, calendar, self.id)
+            else:
+                uri = 'users/%s/events/%s' % (user, self.id)
         else:
             if calendar and not group:
                 uri = 'me/calendars/%s/events/%s' % (calendar, self.id)
@@ -456,11 +459,13 @@ class Event(object):
 
         locations = [location.to_dict() for location in self.locations]
         attendees = [attendee.to_dict() for attendee in self.attendees]
-        recurrence = dict(**self.recurrence)
-        recurrence['range'] = recurrence['range'].to_dict()
         start = self.start.to_dict()
         end = self.end.to_dict()
-        data = dict(body=self.body, categories=self.categories, end=end, importance=self.importance, isAllDay=self.is_all_day, isReminderOn=self.is_reminder_on, location=self.location.to_dict(), locations=locations, recurrence=recurrence, reminderMinutesBeforeStart=self.reminder_minutes_before_start, responseRequested=self.response_requested, sensitivity=self.sensitivity, showAs=self.show_as, start=start, subject=self.subject, attendees=attendees)
+        data = dict(body=self.body, categories=self.categories, end=end, importance=self.importance, isAllDay=self.is_all_day, isReminderOn=self.is_reminder_on, location=self.location.to_dict(), locations=locations, reminderMinutesBeforeStart=self.reminder_minutes_before_start, responseRequested=self.response_requested, sensitivity=self.sensitivity, showAs=self.show_as, start=start, subject=self.subject, attendees=attendees)
+        if self.recurrence:
+            recurrence = dict(**self.recurrence)
+            recurrence['range'] = recurrence['range'].to_dict()
+            data['recurrence'] = recurrence
         api.request(uri, json=data, method='PATCH')
         logger.debug('Updated %r in %r', self, api)
 
@@ -516,9 +521,13 @@ class Event(object):
         location = Location.from_api(data['location'])
         start = DateTime.from_api(data['start'])
         original_start = data.get('originalStart')
+        if original_start:
+            original_start = parse_date_times(original_start[:26])
         original_start_time_zone = data.get('originalStartTimeZone')
         end = DateTime.from_api(data['end'])
         original_end = data.get('originalEnd')
+        if original_end:
+            original_end = parse_date_times(original_end[:26])
         original_end_time_zone = data.get('originalEndTimeZone')
         is_all_day = data['isAllDay']
         is_cancelled = data['isCancelled']
@@ -568,6 +577,7 @@ class Event(object):
         Returns:
             list: Event instances
         """
+        fields = kwargs.get('fields', ['id', 'seriesMasterId', 'type', 'categories', 'subject', 'body', 'bodyPreview', 'attendees', 'locations', 'location', 'start', 'end', 'isAllDay', 'isCancelled', 'isReminderOn', 'isOrganizer', 'originalStart', 'originalStartTimeZone', 'originalEndTimeZone', 'organizer', 'importance', 'sensitivity', 'recurrence', 'responseRequested', 'responseStatus', 'reminderMinutesBeforeStart', 'showAs', 'onlineMeetingUrl', 'webLink', 'hasAttachments', 'attachments', 'calendar', 'extensions', 'instances', 'createdDateTime', 'lastModifiedDateTime'])
         user = kwargs.get('user')
         start_formatted = start.strftime(datetime_format)
         end_formatted = end.strftime(datetime_format)
@@ -576,6 +586,8 @@ class Event(object):
         else:
             uri = 'me/calendarView/delta'
         params = dict(startDateTime=start_formatted, endDateTime=end_formatted)
+        params['$select'] = ','.join(fields)
+
         data = api.request(uri, params=params)
 
         output = [cls.from_api(row) for row in data.get('value', [])]
@@ -603,6 +615,8 @@ class Event(object):
         Returns:
             list: Event instances
         """
+        fields = kwargs.get('fields', ['id', 'seriesMasterId', 'type', 'categories', 'subject', 'body', 'bodyPreview', 'attendees', 'locations', 'location', 'start', 'end', 'isAllDay', 'isCancelled', 'isReminderOn', 'isOrganizer', 'originalStart', 'originalStartTimeZone', 'originalEndTimeZone', 'organizer', 'importance', 'sensitivity', 'recurrence', 'responseRequested', 'responseStatus', 'reminderMinutesBeforeStart', 'showAs', 'onlineMeetingUrl', 'webLink', 'hasAttachments', 'attachments', 'calendar', 'extensions', 'instances', 'createdDateTime', 'lastModifiedDateTime'])
+        raw_filters = kwargs.get('raw_filters', [])
         user = kwargs.get('user')
         group = kwargs.get('group')
         calendar = kwargs.get('calendar')
@@ -628,6 +642,10 @@ class Event(object):
             parameters['startDateTime'] = start.isoformat()
         if end:
             parameters['endDateTime'] = end.isoformat()
+        if raw_filters:
+            parameters['$filter'] = ' and '.join(raw_filters)
+        if fields:
+            parameters['$select'] = ','.join(fields)
 
         data = api.request(uri, params=parameters)
         output = [cls.from_api(row) for row in data.get('value', [])]

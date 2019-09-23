@@ -127,10 +127,10 @@ class GraphAPI(object):
         try:
             response = self._session.request(method, url, headers=header, **kwargs)
         except Exception as e:
-            print(e)
             message = '%r %r request unsuccessful: %r' % (url, method, e.message)
             logger.error(message, exc_info=1)
-            raise exception.MicrosoftException(e.code, message)
+            code = getattr(e, 'code', None)
+            raise exception.MicrosoftException(code, message)
         else:
             data = response.json()
             logger.debug('%s - %r: %r', method, url, data)

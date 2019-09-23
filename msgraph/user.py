@@ -1,7 +1,12 @@
 import logging
+from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
+
+date_format = '%Y-%m-%d'
+datetime_format = date_format + 'T%H:%M:%S'
+full_datetime_format = date_format + 'T%H:%M:%S.%f'
 
 
 class User(object):
@@ -25,11 +30,11 @@ class User(object):
         mail_nickname (str):  The mail alias for the user
         account_enabled (bool): Indicates if the User account is enabled
         password_profile (dict): The password profile for the user
-        delta (dict|None):  Used in delta API calls, denoted if a user is new/changed
+        removed (dict|None):  Used in delta API calls, denoted if a user is new/changed
     """
-    __slots__ = ('id', 'display_name', 'email_address', 'preferred_language', 'user_principal_name', 'office_location', 'job_title', 'given_name', 'surname', 'mobile_phone', 'business_phones', 'mail_nickname', 'account_enabled', 'password_profile', 'removed')
+    __slots__ = ('id', 'display_name', 'email_address', 'preferred_language', 'user_principal_name', 'office_location', 'job_title', 'given_name', 'surname', 'mobile_phone', 'business_phones', 'mail_nickname', 'account_enabled', 'password_profile', 'created_at', 'removed')
 
-    def __init__(self, id, display_name, email_address, preferred_language, user_principal_name, office_location, job_title, given_name, surname, mobile_phone, business_phones, mail_nickname, account_enabled, password_profile, removed):
+    def __init__(self, id, display_name, email_address, preferred_language, user_principal_name, office_location, job_title, given_name, surname, mobile_phone, business_phones, mail_nickname, account_enabled, password_profile, created_at, removed):
         self.id = id
         self.display_name = display_name
         self.email_address = email_address
@@ -44,6 +49,7 @@ class User(object):
         self.mail_nickname = mail_nickname
         self.account_enabled = account_enabled
         self.password_profile = password_profile
+        self.created_at = created_at
         self.removed = removed
 
     def __str__(self):
@@ -88,8 +94,11 @@ class User(object):
         mail_nickname = data.get('mailNickname')
         account_enabled = data.get('accountEnabled')
         password_profile = data.get('passwordProfile')
+        created_at = data.get('createdDateTime')
+        if created_at:
+            created_at = datetime.strptime(created_at[:-1], datetime_format)
         removed = data.get('@removed')
-        return cls(id, display_name, email_address, preferred_language, user_principal_name, office_location, job_title, given_name, surname, mobile_phone, business_phones, mail_nickname, account_enabled, password_profile, removed)
+        return cls(id, display_name, email_address, preferred_language, user_principal_name, office_location, job_title, given_name, surname, mobile_phone, business_phones, mail_nickname, account_enabled, password_profile, created_at, removed)
 
     @classmethod
     def me(cls, api):
@@ -107,7 +116,7 @@ class User(object):
         return cls.from_api(data)
 
     @classmethod
-    def delta(cls, api, uri=None):
+    def delta(cls, api, uri=None, **kwargs):
         """
         Fetches User instances from the API endpoint that were created from a certain point forward
 
@@ -133,9 +142,15 @@ class User(object):
             # at some point in the future, fetch Users created/updated since the delta method was last executed
             new_updated_users, delta_link = user.User.delta(api_instance, delta_link)
         """
-        if not uri:
+        fields = kwargs.get('fields', ['id', 'displayName', 'mail', 'preferredLanguage', 'userPrincipalName', 'officeLocation', 'jobTitle', 'givenName', 'surname', 'mobilePhone', 'businessPhones', 'mailNickname', 'accountEnabled', 'passwordProfile', 'createdDateTime'])
+        if uri:
+            data = api.request(uri)
+        else:
             uri = 'users/delta'
-        data = api.request(uri)
+            params = {
+                '$select': ','.join(fields)
+            }
+            data = api.request(uri, params=params)
 
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
@@ -160,13 +175,15 @@ class User(object):
         Returns:
             (list|User):  If a user specified, the requested User instance, otherwise a list of User instances
         """
+        fields = kwargs.get('fields', ['id', 'displayName', 'mail', 'preferredLanguage', 'userPrincipalName', 'officeLocation', 'jobTitle', 'givenName', 'surname', 'mobilePhone', 'businessPhones', 'mailNickname', 'accountEnabled', 'passwordProfile', 'createdDateTime'])
         if user:
             uri = 'users/%s' % user
         else:
             uri = 'users'
 
         params = {
-            '$top': kwargs.get('page_size', 100)
+            '$top': kwargs.get('page_size', 100),
+            '$select': ','.join(fields)
         }
         data = api.request(uri, params=params)
         if user:
