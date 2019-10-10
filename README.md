@@ -76,4 +76,6 @@ After calling the `delete` method, the `Event` has been removed from the `calend
 ## Logging
 The following modules have their own loggers:
 *  `msgraph.api` - Used for logging error messages from the `API` and logging raw `HTTP` response content
-*  `msgrpaph.calendar` - Used for logging the creation/update/deletes of `Calendar`/`Event`/`Group`/`Category` instances
+*  `msgraph.calendar` - Used for logging the creation/update/deletes of `msgraph.calendar.Calendar`/`msgraph.calendar.Event`/`msgraph.calendar.msgraph.calendar.Group`/`msgraph.calendar.Category` instances
+* `msgraph.group` - Used for logging the creation/update/deletes of `msgraph.group.Group` instances
+* `msgraph.user` - Used for logging the creation/update/deletes of `msgraph.user.User` instances

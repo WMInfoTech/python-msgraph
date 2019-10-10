@@ -7,11 +7,12 @@ logger = logging.getLogger(__name__)
 date_format = '%Y-%m-%d'
 datetime_format = date_format + 'T%H:%M:%S'
 full_datetime_format = date_format + 'T%H:%M:%S.%f'
+extended_datetime_format = date_format + 'T%H:%M:%S.%fZ'
 
 
 def parse_date_times(text):
     instance = None
-    for format in [full_datetime_format, datetime_format, date_format]:
+    for format in [extended_datetime_format, full_datetime_format, datetime_format, date_format]:
         try:
             instance = datetime.strptime(text, format)
         except Exception:
@@ -106,6 +107,7 @@ class Calendar(object):
         Keyword Arguments:
             user (msgraph.user.User):  The User instance to fetch the Calendar for
             group (Group):  The group for which to fetch the Calendar for
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list: Calendar instances
@@ -121,7 +123,11 @@ class Calendar(object):
             uri += 'calendarGroup/%s/calendars' % group
         else:
             uri += 'calendars'
-        data = api.request(uri)
+
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")
@@ -143,7 +149,7 @@ class Location(object):
         return '<%s %s display_name=%r, location_type=%r, unique_id_type=%r>' % (self.__class__.__name__, id(self), self.display_name, self.location_type, self.unique_id_type)
 
     def to_dict(self):
-        return dict(displayName=self.display_name, locationType=self.location_type, unique_id=self.unique_id, uniqueIdType=self.unique_id_type)
+        return dict(displayName=self.display_name, locationType=self.location_type)
 
     @classmethod
     def from_api(cls, data):
@@ -249,13 +255,16 @@ class Category(object):
         return cls(id, display_name, color)
 
     @classmethod
-    def get(cls, api, user=None):
+    def get(cls, api, user=None, **kwargs):
         """
         Fetch the Categories from the API endpoint
 
         Parameters:
             api (msgraph.api.GraphAPI):  The endpoint from which to fetch Category instances from
             user (msgraph.user.User):  The User instance to fetch the Category from
+
+        Keyword Arguments:
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list: Category instances
@@ -264,7 +273,11 @@ class Category(object):
             uri = 'users/%s/output/masterCategories'
         else:
             uri = 'me/outlook/masterCategories'
-        data = api.request(uri)
+
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")
@@ -348,9 +361,9 @@ class DateTime(object):
 
 
 class Event(object):
-    __slots__ = ('id', 'ical_uid', 'series_master_id', 'type', 'categories', 'subject', 'body', 'body_preview', 'attendees', 'locations', 'location', 'start', 'original_start', 'original_start_time_zone', 'end', 'original_end', 'original_end_time_zone', 'is_all_day', 'is_cancelled', 'is_reminder_on', 'is_organizer', 'organizer', 'importance', 'sensitivity', 'recurrence', 'response_requested', 'response_status', 'reminder_minutes_before_start', 'show_as', 'online_meeting_url', 'web_link', 'has_attachments', 'attachments', 'calendar', 'extensions', 'instances', 'multi_value_extended_properties', 'single_value_extended_properties', 'created_at', 'last_modified')
+    __slots__ = ('id', 'ical_uid', 'series_master_id', 'type', 'categories', 'subject', 'body', 'body_preview', 'attendees', 'locations', 'location', 'start', 'original_start', 'original_start_time_zone', 'end', 'original_end', 'original_end_time_zone', 'is_all_day', 'is_cancelled', 'is_reminder_on', 'is_organizer', 'organizer', 'importance', 'sensitivity', 'recurrence', 'response_requested', 'response_status', 'reminder_minutes_before_start', 'show_as', 'online_meeting_url', 'web_link', 'has_attachments', 'attachments', 'calendar', 'extensions', 'instances', 'multi_value_extended_properties', 'single_value_extended_properties', 'created_at', 'last_modified', 'removed')
 
-    def __init__(self, id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified):
+    def __init__(self, id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified, removed):
         self.id = id
         self.ical_uid = ical_uid
         self.series_master_id = series_master_id
@@ -391,6 +404,7 @@ class Event(object):
         self.single_value_extended_properties = single_value_extended_properties
         self.created_at = created_at
         self.last_modified = last_modified
+        self.removed = removed
 
     def __hash__(self):
         return hash((self.id))
@@ -433,6 +447,8 @@ class Event(object):
                 uri = 'users/%s/calendars/%s/events/%s' % (user, calendar, self.id)
             elif group and calendar:
                 uri = 'users/%s/calendargroups/%s/calendars/%s/events/%s' % (user, group, calendar, self.id)
+            else:
+                uri = 'users/%s/events/%s' % (user, self.id)
         else:
             if calendar and not group:
                 uri = 'me/calendars/%s/events/%s' % (calendar, self.id)
@@ -443,11 +459,13 @@ class Event(object):
 
         locations = [location.to_dict() for location in self.locations]
         attendees = [attendee.to_dict() for attendee in self.attendees]
-        recurrence = dict(**self.recurrence)
-        recurrence['range'] = recurrence['range'].to_dict()
         start = self.start.to_dict()
         end = self.end.to_dict()
-        data = dict(body=self.body, categories=self.categories, end=end, importance=self.importance, isAllDay=self.is_all_day, isReminderOn=self.is_reminder_on, location=self.location.to_dict(), locations=locations, recurrence=recurrence, reminderMinutesBeforeStart=self.reminder_minutes_before_start, responseRequested=self.response_requested, sensitivity=self.sensitivity, showAs=self.show_as, start=start, subject=self.subject, attendees=attendees)
+        data = dict(body=self.body, categories=self.categories, end=end, importance=self.importance, isAllDay=self.is_all_day, isReminderOn=self.is_reminder_on, location=self.location.to_dict(), locations=locations, reminderMinutesBeforeStart=self.reminder_minutes_before_start, responseRequested=self.response_requested, sensitivity=self.sensitivity, showAs=self.show_as, start=start, subject=self.subject, attendees=attendees)
+        if self.recurrence:
+            recurrence = dict(**self.recurrence)
+            recurrence['range'] = recurrence['range'].to_dict()
+            data['recurrence'] = recurrence
         api.request(uri, json=data, method='PATCH')
         logger.debug('Updated %r in %r', self, api)
 
@@ -494,7 +512,7 @@ class Event(object):
         ical_uid = data.get('ical_uid')
         series_master_id = data['seriesMasterId']
         type = data['type']
-        categories = data['categories']
+        categories = data.get('categories', [])
         subject = data['subject']
         body = data['body']
         body_preview = data['bodyPreview']
@@ -503,9 +521,13 @@ class Event(object):
         location = Location.from_api(data['location'])
         start = DateTime.from_api(data['start'])
         original_start = data.get('originalStart')
+        if original_start:
+            original_start = parse_date_times(original_start[:26])
         original_start_time_zone = data.get('originalStartTimeZone')
         end = DateTime.from_api(data['end'])
         original_end = data.get('originalEnd')
+        if original_end:
+            original_end = parse_date_times(original_end[:26])
         original_end_time_zone = data.get('originalEndTimeZone')
         is_all_day = data['isAllDay']
         is_cancelled = data['isCancelled']
@@ -533,8 +555,48 @@ class Event(object):
         single_value_extended_properties = data.get('singleValueExtendedProperties', [])
         created_at = parse_date_times(data['createdDateTime'][:26])
         last_modified = parse_date_times(data['lastModifiedDateTime'][:26])
+        removed = data.get('@removed')
+        return cls(id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified, removed)
 
-        return cls(id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified)
+    @classmethod
+    def delta(cls, api, start, end, **kwargs):
+        """
+        Fetch the Events from the API endpoint
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint in which to create the Group instance
+            start (datetime):  The lower bound of the datetime range
+            end (datetime):  The upper bound of the datetime range
+
+        Keyword Parameters:
+            user (msgraph.user.User):  The User instance for which to fetch Events for
+            group (Group):  The Group for which to fetch Events for
+            calendar (Calendar):  The Calendar for which to fetch Events for
+            page_size (int):  The number of items to include in each page, default: 100
+
+        Returns:
+            list: Event instances
+        """
+        fields = kwargs.get('fields', ['id', 'seriesMasterId', 'type', 'categories', 'subject', 'body', 'bodyPreview', 'attendees', 'locations', 'location', 'start', 'end', 'isAllDay', 'isCancelled', 'isReminderOn', 'isOrganizer', 'originalStart', 'originalStartTimeZone', 'originalEndTimeZone', 'organizer', 'importance', 'sensitivity', 'recurrence', 'responseRequested', 'responseStatus', 'reminderMinutesBeforeStart', 'showAs', 'onlineMeetingUrl', 'webLink', 'hasAttachments', 'attachments', 'calendar', 'extensions', 'instances', 'createdDateTime', 'lastModifiedDateTime'])
+        user = kwargs.get('user')
+        start_formatted = start.strftime(datetime_format)
+        end_formatted = end.strftime(datetime_format)
+        if user:
+            uri = 'users/%s/calendarView/delta' % user
+        else:
+            uri = 'me/calendarView/delta'
+        params = dict(startDateTime=start_formatted, endDateTime=end_formatted)
+        params['$select'] = ','.join(fields)
+
+        data = api.request(uri, params=params)
+
+        output = [cls.from_api(row) for row in data.get('value', [])]
+        while data.get("@odata.nextLink"):
+            uri = data.get("@odata.nextLink")
+            data = api.request(uri)
+            output += [cls.from_api(row) for row in data.get('value', [])]
+        delta_link = data['@odata.deltaLink']
+        return output, delta_link
 
     @classmethod
     def get(cls, api, **kwargs):
@@ -548,10 +610,13 @@ class Event(object):
             user (msgraph.user.User):  The User instance for which to fetch Events for
             group (Group):  The Group for which to fetch Events for
             calendar (Calendar):  The Calendar for which to fetch Events for
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list: Event instances
         """
+        fields = kwargs.get('fields', ['id', 'seriesMasterId', 'type', 'categories', 'subject', 'body', 'bodyPreview', 'attendees', 'locations', 'location', 'start', 'end', 'isAllDay', 'isCancelled', 'isReminderOn', 'isOrganizer', 'originalStart', 'originalStartTimeZone', 'originalEndTimeZone', 'organizer', 'importance', 'sensitivity', 'recurrence', 'responseRequested', 'responseStatus', 'reminderMinutesBeforeStart', 'showAs', 'onlineMeetingUrl', 'webLink', 'hasAttachments', 'attachments', 'calendar', 'extensions', 'instances', 'createdDateTime', 'lastModifiedDateTime'])
+        raw_filters = kwargs.get('raw_filters', [])
         user = kwargs.get('user')
         group = kwargs.get('group')
         calendar = kwargs.get('calendar')
@@ -572,10 +637,15 @@ class Event(object):
         uri += 'events'
 
         parameters = dict()
+        parameters['$top'] = kwargs.get('page_size', 100)
         if start:
             parameters['startDateTime'] = start.isoformat()
         if end:
             parameters['endDateTime'] = end.isoformat()
+        if raw_filters:
+            parameters['$filter'] = ' and '.join(raw_filters)
+        if fields:
+            parameters['$select'] = ','.join(fields)
 
         data = api.request(uri, params=parameters)
         output = [cls.from_api(row) for row in data.get('value', [])]
@@ -728,13 +798,16 @@ class Group(object):
         logger.debug('Deleted %r in %r', self, api)
 
     @classmethod
-    def get(cls, api, user=None):
+    def get(cls, api, user=None, **kwargs):
         """
         Fetch the Groups from the API endpoint
 
         Parameters:
             api (msgraph.api.GraphAPI):  The endpoint in which to create the Group instance
             user (msgraph.user.User):  The User instance to create the Group for
+
+        Keyword Arguments:
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list:  Group instances
@@ -743,7 +816,11 @@ class Group(object):
             uri = 'users/%s/calendarGroups' % user
         else:
             uri = 'me/calendarGroups'
-        data = api.request(uri)
+
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")
@@ -830,6 +907,7 @@ class Attachment(object):
 
         Keyword Arguments:
             user (msgraph.user.User):  The User instance to fetch the Attachment for
+            page_size (int):  The number of items to include in each page, default: 100
 
         Returns:
             list:  Attachments instances
@@ -839,7 +917,10 @@ class Attachment(object):
             uri = 'users/%s/events/%s/attachments' % (user, event)
         else:
             uri = 'me/events/%s/attachments' % event
-        data = api.request(uri)
+        params = {
+            '$top': kwargs.get('page_size', 100)
+        }
+        data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
             uri = data.get("@odata.nextLink")

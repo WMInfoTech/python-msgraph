@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='msgraph',
-    version='0.1',
+    version='0.1.2',
     description='Python Wrapper to the Microsoft Graph API',
     author='Doug Fenstermacher',
     author_email='dpfens@wm.edu',
@@ -10,5 +10,5 @@ setup(
     packages=['msgraph'],
     keywords=['microsoft', 'graph', 'api', 'calendar', 'event'],
     license='',
-    install_requires=['adal>=1.2.2', 'requests>=2.21.0']
+    install_requires=['adal>=1.2.2', 'requests>=2.12.0']
 )
