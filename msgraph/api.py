@@ -2,7 +2,7 @@ import logging
 import adal
 import requests
 import os
-import exception
+from . import exception
 
 
 logger = logging.getLogger(__name__)

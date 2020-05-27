@@ -78,4 +78,5 @@ The following modules have their own loggers:
 *  `msgraph.api` - Used for logging error messages from the `API` and logging raw `HTTP` response content
 *  `msgraph.calendar` - Used for logging the creation/update/deletes of `msgraph.calendar.Calendar`/`msgraph.calendar.Event`/`msgraph.calendar.msgraph.calendar.Group`/`msgraph.calendar.Category` instances
 * `msgraph.group` - Used for logging the creation/update/deletes of `msgraph.group.Group` instances
+* `msgraph.user` - Used for logging the creation/update/deletes of `msgraph.sites.Site` instances, `msgraph.sites.SiteList` instances, and `msgraph.sites.ListItem` instances
 * `msgraph.user` - Used for logging the creation/update/deletes of `msgraph.user.User` instances
