@@ -24,7 +24,7 @@ class Site(object):
         return self.id
 
     def __repr__(self):
-        return '<%s %s id=%s, name=%r, display_name=%r, created_datetime=%s>' % (self.__class__.__name__, id(self), self.id, self.name, self.display_name, self.created_datetime)
+        return '<%s %s id=%r, name=%r, display_name=%r, created_datetime=%s>' % (self.__class__.__name__, id(self), self.id, self.name, self.display_name, self.created_datetime)
 
     def subsites(self, api, **kwargs):
         uri = 'sites/%s/sites' % self.id
