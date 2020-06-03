@@ -5,15 +5,16 @@ logger = logging.getLogger(__name__)
 
 
 class Site(object):
-    __slots__ = ('id', 'name', 'display_name', 'description', 'etag', 'root', 'site_collection', 'web_url', 'created_datetime', 'last_modified_datetime')
+    __slots__ = ('id', 'name', 'display_name', 'description', 'etag', 'root', 'sharepoint_ids', 'site_collection', 'web_url', 'created_datetime', 'last_modified_datetime')
 
-    def __init__(self, id, name, display_name, description, etag, root, site_collection, web_url, created_datetime, last_modified_datetime):
+    def __init__(self, id, name, display_name, description, etag, root, sharepoint_ids, site_collection, web_url, created_datetime, last_modified_datetime):
         self.id = id
         self.name = name
         self.display_name = display_name
         self.description = description
         self.etag = etag
         self.root = root
+        self.sharepoint_ids = sharepoint_ids
         self.site_collection = site_collection
         self.web_url = web_url
         self.created_datetime = created_datetime
@@ -26,7 +27,7 @@ class Site(object):
         return '<%s %s id=%s, name=%r, display_name=%r, created_datetime=%s>' % (self.__class__.__name__, id(self), self.id, self.name, self.display_name, self.created_datetime)
 
     def subsites(self, api, **kwargs):
-        uri = 'sites/%s/subsites' % self.id
+        uri = 'sites/%s/sites' % self.id
         params = {
             '$top': kwargs.get('page_size', 100)
         }
@@ -37,20 +38,22 @@ class Site(object):
             uri = data.get("@odata.nextLink")
             data = api.request(uri)
             output += [cls.from_api(row) for row in data.get('value', [])]
+        return output
 
     @classmethod
     def from_api(cls, data):
         id = data['id']
         name = data['name']
         display_name = data['displayName']
-        description = data['description']
+        description = data.get('description')
         etag = data.get('eTag')
-        root = data['root']
-        site_collection = data['siteCollection']
+        root = data.get('root')
+        sharepoint_ids = data.get('sharepointIds')
+        site_collection = data.get('siteCollection')
         web_url = data['webUrl']
         created_datetime = data['createdDateTime']
         last_modified_datetime = data['lastModifiedDateTime']
-        return cls(id, name, display_name, description, etag, root, site_collection, web_url, created_datetime, last_modified_datetime)
+        return cls(id, name, display_name, description, etag, root, sharepoint_ids, site_collection, web_url, created_datetime, last_modified_datetime)
 
     @classmethod
     def get(cls, api, **kwargs):
@@ -68,6 +71,20 @@ class Site(object):
         uri = 'groups/%s/sites/root' % group
         data = api.request(uri)
         return cls.from_api(data)
+
+    @classmethod
+    def search(cls, api, query):
+        params = {
+            '$search': query
+        }
+        uri = 'sites'
+        data = api.request(uri, params=params)
+        output = [cls.from_api(row) for row in data.get('value', [])]
+        while data.get("@odata.nextLink"):
+            uri = data.get("@odata.nextLink")
+            data = api.request(uri)
+            output += [cls.from_api(row) for row in data.get('value', [])]
+        return output
 
 
 class SiteList(object):
