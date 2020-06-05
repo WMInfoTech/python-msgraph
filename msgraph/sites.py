@@ -280,6 +280,9 @@ class ListItem(object):
     def __getitem__(self, key):
         return self.fields[key]
 
+    def __contains__(self, item):
+        return item in self.fields
+
     def keys(self):
         return self.fields.keys()
 
