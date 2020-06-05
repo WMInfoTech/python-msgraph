@@ -1,8 +1,9 @@
 from distutils.core import setup
+import msgraph
 
 setup(
     name='msgraph',
-    version='0.1.2',
+    version=msgraph.__version__,
     description='Python Wrapper to the Microsoft Graph API',
     author='Doug Fenstermacher',
     author_email='dpfens@wm.edu',
