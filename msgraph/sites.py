@@ -27,6 +27,18 @@ class Site(object):
         return '<%s %s id=%r, name=%r, display_name=%r, created_datetime=%s>' % (self.__class__.__name__, id(self), self.id, self.name, self.display_name, self.created_datetime)
 
     def subsites(self, api, **kwargs):
+        """
+        Fetches the subsites of a given SharePoint site from the Microsoft Graph instance
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
+
+        Keyword Arguments:
+            page_size (int):  The number of items to include in each page, default: 100
+
+        Returns:
+            list: Site instances
+        """
         uri = 'sites/%s/sites' % self.id
         params = {
             '$top': kwargs.get('page_size', 100)
@@ -57,10 +69,25 @@ class Site(object):
 
     @classmethod
     def get(cls, api, **kwargs):
-        site_id = kwargs.get('id')
+        """
+        Fetches a given Site by id of the site from the Microsoft Graph instance
 
-        if site_id:
-            uri = 'sites/%s' % site_id
+        If a site id is not provided, the root SharePoint site within the tenant will be fetched
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
+
+        Keyword Arguments:
+            site (Site|str):  The number of items to include in each page, default: None
+            page_size (int):  The number of items to include in each page, default: 100
+
+        Returns:
+            Site: instance of the requested site
+        """
+        site = kwargs.get('site')
+
+        if site:
+            uri = 'sites/%s' % site
         else:
             uri = 'sites/root'
         data = api.request(uri)
@@ -68,14 +95,55 @@ class Site(object):
 
     @classmethod
     def by_group(cls, api, group):
+        """
+        Fetches the team SharePoint site for a given group from the Microsoft Graph instance
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
+            group (Group|str): The group (or group ID) whose site is being fetched
+
+        Returns:
+            Site: team site for the given group
+        """
         uri = 'groups/%s/sites/root' % group
         data = api.request(uri)
         return cls.from_api(data)
 
     @classmethod
-    def search(cls, api, query):
+    def by_relative_url(cls, api, host_name, path):
+        """
+        Fetches a Site instance by the server-relative URL of the site
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
+            host_name (str): The host name of the site
+            path (str):  The server-relative URL of the site
+
+        Returns:
+            Site: Site instance specified by the relative URL
+        """
+        uri = 'sites/%s:/%s' % (host_name, path)
+        data = api.request(uri)
+        return cls.from_api(data)
+
+    @classmethod
+    def search(cls, api, query, **kwargs):
+        """
+        Fetches SharePoint sites matching the provided search query from the Microsoft Graph instance
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
+            query (str): A string to search for in the Site instance
+
+        Keyword Arguments:
+            page_size (int):  The number of items to include in each page, default: 100
+
+        Returns:
+            list: Site instances matching the provided query
+        """
         params = {
-            '$search': query
+            'search': query,
+            '$top': kwargs.get('page_size', 100)
         }
         uri = 'sites'
         data = api.request(uri, params=params)
@@ -126,17 +194,33 @@ class SiteList(object):
 
     @classmethod
     def get(cls, api, site, **kwargs):
-        list_id = kwargs.pop('id', None)
+        """
+        Fetches lists for a given SharePoint site from the Microsoft Graph instance
+
+        If a list_instance is provided, only that list will be fetched
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
+            site (Site|str): The SharePoint site (or site ID of the Site) to fetch lists for
+
+        Keyword Arguments:
+            list_instance (List|str): A given SiteList (or list ID) to fetch
+            page_size (int):  The number of items to include in each page, default: 100
+
+        Returns:
+            (SiteList|list): If a list_instance is provided, the single SiteList instance, list of all Site lists otherwise
+        """
+        list_instance = kwargs.pop('list_instance', None)
         uri = 'sites/%s/lists' % site
-        if list_id:
-            uri += '/%s' % list_id
+        if list_instance:
+            uri += '/%s' % list_instance
 
         params = {
             '$top': kwargs.get('page_size', 100)
         }
 
         data = api.request(uri, params=params)
-        if list_id:
+        if list_instance:
             return cls.from_api(data)
         output = [cls.from_api(row) for row in data.get('value', [])]
         while data.get("@odata.nextLink"):
@@ -147,6 +231,19 @@ class SiteList(object):
 
     @classmethod
     def create(cls, api, site, display_name, template, columns):
+        """
+        Creates a new list for a given site in the Microsoft Graph instance
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to save data
+            site (Site|str): The SharePoint site (or site ID of the Site) to associate the new list with
+            display_name (str): The rendered name of the new list
+            template (str): The name of the template used to create the list
+            columns (iterable): column names to be stored in the ListItems in the list
+
+        Returns:
+            SiteList: newly created list instance
+        """
         request_data = dict(displayName=display_name, list=dict(template=template), columns=columns)
         uri = 'sites/%s/lists'
         data = api.request(uri, json=request_data, method='POST')
@@ -154,7 +251,7 @@ class SiteList(object):
 
 
 class ListItem(object):
-    __slots__ = ('id', 'etag', 'content_type', 'parent_reference', 'name', 'description', 'fields', 'created_datetime', 'created_by', 'last_modified_datetime', 'last_modified_by')
+    __slots__ = ('id', 'etag', 'content_type', 'parent_reference', 'name', 'description', 'fields', 'created_datetime', 'created_by', 'last_modified_datetime', 'last_modified_by', '_dirty_fields')
 
     def __init__(self, id, etag, content_type, parent_reference, name, description, fields, created_datetime, created_by, last_modified_datetime, last_modified_by):
         self.id = id
@@ -168,15 +265,17 @@ class ListItem(object):
         self.created_by = created_by
         self.last_modified_datetime = last_modified_datetime
         self.last_modified_by = last_modified_by
+        self._dirty_fields = dict()
 
     def __str__(self):
         return self.id
 
     def __repr__(self):
-        return '<%s %s id=%r, createdAt=%s, lastModified=%r>' % (self.__class__.__name__, id(self), self.id, self.created_datetime, self.last_modified_datetime)
+        return '<%s %s id=%r, createdAt=%s, lastModified=%s>' % (self.__class__.__name__, id(self), self.id, self.created_datetime, self.last_modified_datetime)
 
     def __setitem__(self, key, value):
         self.fields[key] = value
+        self._dirty_fields[key] = value
 
     def __getitem__(self, key):
         return self.fields[key]
@@ -184,15 +283,82 @@ class ListItem(object):
     def keys(self):
         return self.fields.keys()
 
-    def update(self, api, site, list_instance):
+    def update(self, api, site, list_instance, **kwargs):
+        """
+        Updates the ListItem in the Microsoft Graph instance
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to save data
+            site (Site|str): The SharePoint site (or site ID of the Site) the ListItem is associated with
+            list_instance (SiteList|str):  The SiteList (or list ID) the ListItem is associated with
+
+        Keyword Arguments:
+            readonly_fields (iterable):  Read-only fields in the ListItem fields dictionary
+
+        Returns:
+            None
+        """
+
         uri = 'sites/%s/lists/%s/items/%s' % (site, list_instance, self.id)
-        api.request(uri, json=self.fields, method='PATCH')
+        headers = dict()
+        if kwargs.get('if_match', True):
+            headers['if-match'] = self.etag
+        data = dict(eTag=self.etag, name=self.name, description=self.description, parentReference=self.parent_reference)
+        api.request(uri, json=data, headers=headers, method='PATCH')
+
+    def update_fields(self, api, site, list_instance, **kwargs):
+        """
+        Updates the ListItem fields in the Microsoft Graph instance
+
+        Warning:
+            This method is experimental, specifically because read-only fields currently need to be specified manually by the user.
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to save data
+            site (Site|str): The SharePoint site (or site ID of the Site) the ListItem is associated with
+            list_instance (SiteList|str):  The SiteList (or list ID) the ListItem is associated with
+
+        Keyword Arguments:
+            readonly_fields (iterable):  Read-only fields in the ListItem fields dictionary
+
+        Returns:
+            None
+        """
+        fields = kwargs.get('fields')
+        if not fields:
+            fields = self._dirty_fields
+        uri = 'sites/%s/lists/%s/items/%s/fields' % (site, list_instance, self.id)
+        data = api.request(uri, json=fields, method='PATCH')
+        self.fields.update(data)
+        self._dirty_fields = dict()
 
     def delete(self, api, site, list_instance):
+        """
+        Deletes the ListItem fields from the Microsoft Graph instance
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to delete the instance
+            site (Site|str): The SharePoint site (or site ID of the Site) the ListItem is associated with
+            list_instance (SiteList|str):  The SiteList (or list ID) the ListItem is associated with
+
+        Returns:
+            None
+        """
         uri = 'sites/%s/lists/%s/items/%s' % (site, list_instance, self.id)
         api.request(uri, method='DELETE')
 
     def versions(self, api, site, list_instance, **kwargs):
+        """
+        Fetches previous versions of the ListItem from the Microsoft Graph instance
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
+            site (Site|str): The SharePoint site (or site ID of the Site) the ListItem is associated with
+            list_instance (SiteList|str):  The SiteList (or list ID) the ListItem is associated with
+
+        Returns:
+            tuple: A sequentially ordered list of previous ListItem versions of the current ListItem
+        """
         uri = 'sites/%s/lists/%s/items/%s/versions' % (site, list_instance, self.id)
         data = api.request(uri)
         instances = [self.__class__.from_api(item) for item in data.get('value', [])]
@@ -216,8 +382,18 @@ class ListItem(object):
 
     @classmethod
     def get(cls, api, site, site_list, **kwargs):
-        uri = 'sites/%s/lists/%s/items' % (site, site_list)
+        """
+        Fetches ListItem instances from the Microsoft Graph instance
 
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint from which to fetch data
+            site (Site|str): The SharePoint site (or site ID of the Site) the ListItems are associated with
+            list_instance (SiteList|str):  The SiteList (or list ID) the ListItems are associated with
+
+        Returns:
+            list: The ListItem instances associated with the Site and List
+        """
+        uri = 'sites/%s/lists/%s/items' % (site, site_list)
         params = dict(expand='fields')
         data = api.request(uri, params=params)
         output = [cls.from_api(row) for row in data.get('value', [])]
@@ -229,6 +405,20 @@ class ListItem(object):
 
     @classmethod
     def create(cls, api, site, list_instance, **kwargs):
+        """
+        Creates a ListItem instance in the Microsoft Graph instance
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint at which to save data
+            site (Site|str): The SharePoint site (or site ID of the Site) the ListItems are associated with
+            list_instance (SiteList|str):  The SiteList (or list ID) the ListItems are associated with
+
+        Keyword Arguments:
+            fields (object): The fields to save in the ListItem instance
+
+        Returns:
+            ListItem: The newly created ListItem instance associated with the Site and List
+        """
         uri = 'sites/%s/lists/%s/items' % (site, list_instance)
         request_data = dict(fields=kwargs)
         data = api.request(uri, json=request_data, method='POST')

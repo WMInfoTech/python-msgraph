@@ -118,15 +118,17 @@ class GraphAPI(object):
         else:
             url = uri
         token = str(self._access_token)
-        header = {
+        headers = {
             'Authorization': token,
             'Content-Type': 'application/json'
         }
-
+        method_specific_headers = kwargs.pop('headers', dict())
+        headers.update(method_specific_headers)
         logger.info("Calling %s(%s)", url, method)
         try:
-            response = self._session.request(method, url, headers=header, **kwargs)
+            response = self._session.request(method, url, headers=headers, **kwargs)
         except Exception as e:
+            print(e)
             message = '%r %r request unsuccessful: %r' % (url, method, e.message)
             logger.error(message, exc_info=1)
             code = getattr(e, 'code', None)
