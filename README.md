@@ -177,6 +177,13 @@ for item in list_items:
     previous_versions = item.versions(api_instance, site_id, list_id)
 ```
 
+#### Creating a ListItem
+To create a new `msgraph.sites.ListItem` use the `msgraph.sites.ListItem.create` method:
+```python
+new_list_item_fields = dict(Title='Programmer')
+new_list_item = sites.ListItem.create(api_instance, site, list, new_list_item_fields)
+```
+
 #### Updating a ListItem
 To update the properties of a `msgraph.sites.ListItem` instance, use the `msgraph.sites.ListItem.update` method:
 ```python
@@ -204,6 +211,12 @@ for index, item in enumerate(list_items):
 for item in list_items:
     item['Title'] = 'Assistant Executive ' + item['Title']
     item.update_fields(api_instance, site_id, list_id)
+```
+
+#### Deleting a ListItem
+To delete an existing `msgraph.sites.ListItem` instance, use the `msgraph.sites.ListItem.delete` method:
+```python
+new_list_item.delete(api_instance, site, site_list)
 ```
 
 ## Logging

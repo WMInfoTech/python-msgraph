@@ -134,6 +134,8 @@ class GraphAPI(object):
             code = getattr(e, 'code', None)
             raise exception.MicrosoftException(code, message)
         else:
+            if not response.content:
+                return None
             data = response.json()
             logger.debug('%s - %r: %r', method, url, data)
         if 'error' in data:

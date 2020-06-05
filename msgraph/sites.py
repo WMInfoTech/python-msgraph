@@ -244,8 +244,8 @@ class SiteList(object):
         Returns:
             SiteList: newly created list instance
         """
-        request_data = dict(displayName=display_name, list=dict(template=template), columns=columns)
         uri = 'sites/%s/lists'
+        request_data = dict(displayName=display_name, list=dict(template=template), columns=columns)
         data = api.request(uri, json=request_data, method='POST')
         return cls.from_api(data)
 
@@ -407,7 +407,7 @@ class ListItem(object):
         return output
 
     @classmethod
-    def create(cls, api, site, list_instance, **kwargs):
+    def create(cls, api, site, list_instance, fields):
         """
         Creates a ListItem instance in the Microsoft Graph instance
 
@@ -423,7 +423,7 @@ class ListItem(object):
             ListItem: The newly created ListItem instance associated with the Site and List
         """
         uri = 'sites/%s/lists/%s/items' % (site, list_instance)
-        request_data = dict(fields=kwargs)
+        request_data = dict(fields=fields)
         data = api.request(uri, json=request_data, method='POST')
         return cls.from_api(data)
 
