@@ -89,7 +89,7 @@ matching_sites = sites.Site.search(api_instance, 'software')
 ```
 
 #### Fetching a specific site
-Specific `msgraph.sites.Site` instances can be fetched using multiple methids:
+Specific `msgraph.sites.Site` instances can be fetched using multiple methods:
 *  `msgraph.sites.Site.get` method fetches sites by using the ID of the site
    ```python
    site_id = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'

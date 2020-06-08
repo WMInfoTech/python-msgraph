@@ -128,7 +128,6 @@ class GraphAPI(object):
         try:
             response = self._session.request(method, url, headers=headers, **kwargs)
         except Exception as e:
-            print(e)
             message = '%r %r request unsuccessful: %r' % (url, method, e.message)
             logger.error(message, exc_info=1)
             code = getattr(e, 'code', None)
