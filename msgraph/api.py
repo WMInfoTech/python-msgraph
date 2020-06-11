@@ -118,9 +118,10 @@ class GraphAPI(object):
         else:
             url = uri
         token = str(self._access_token)
+        content_type = kwargs.pop('content_type', 'application/json')
         headers = {
             'Authorization': token,
-            'Content-Type': 'application/json'
+            'Content-Type': content_type
         }
         method_specific_headers = kwargs.pop('headers', dict())
         headers.update(method_specific_headers)
@@ -133,9 +134,10 @@ class GraphAPI(object):
             code = getattr(e, 'code', None)
             raise exception.MicrosoftException(code, message)
         else:
-            if not response.content:
-                return None
-            data = response.json()
+            try:
+                data = response.json()
+            except Exception:
+                return response.content
             logger.debug('%s - %r: %r', method, url, data)
         if 'error' in data:
             error = data['error']
@@ -177,3 +179,4 @@ class GraphAPI(object):
         """
         access_token = cls._authenticate_via_certificate(authority_host_uri, tenant, resource_uri, client_id, client_certificate, certificate_thumbprint)
         return cls(authority_host_uri, tenant, resource_uri, client_id, access_token, client_certificate=client_certificate, certificate_thumbprint=certificate_thumbprint)
+
