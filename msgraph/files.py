@@ -169,7 +169,7 @@ class DriveItem(object):
     def __repr__(self):
         return '<%s %s id=%r, name=%r, size=%s bytes>' % (self.__class__.__name__, id(self), self.id, self.name, self.size)
 
-    def move(self, api, new_folder, new_name, **kwargs):
+    def move(self, api, new_name, **kwargs):
         group = kwargs.get('group')
         site = kwargs.get('site')
         drive = kwargs.get('drive')
@@ -186,8 +186,14 @@ class DriveItem(object):
         else:
             uri = 'me/drive/items'
         uri += '/%s' % self.id
-        new_folder_id = str(new_folder)
-        patch_data = dict(parentReference=dict(id=new_folder_id), name=new_name)
+
+        new_folder = kwargs.get('folder')
+        patch_data = dict(name=new_name)
+        if new_folder:
+            new_folder_id = str(new_folder)
+            patch_data['parentReference'] = dict(id=new_folder_id)
+        else:
+            patch_data['parentReference'] = self.parent_reference
         data = api.request(uri, json=patch_data, method='PATCH')
         self.id = data['id']
         self.parent_reference = data['parentReference']
