@@ -1,6 +1,7 @@
 from distutils.core import setup
 import msgraph
 
+print(vars(msgraph))
 setup(
     name='msgraph',
     version=msgraph.__version__,
