@@ -4,8 +4,8 @@
 
 ## Installation
 To install the `msgraph` library use the following command:
-```python
-python -m pip install git+ssh://git@code.wm.edu/IT/software-systems/eispippackages/msgraph.git  
+```bash
+python -m pip install git+ssh://git@github.com:WMInfoTech/python-msgraph.git
 ```
 
 ## Usage
