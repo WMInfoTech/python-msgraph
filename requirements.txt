@@ -1,2 +1,2 @@
 adal>=1.2.2
-requests>=2.21.0
+requests>=2.12.0
