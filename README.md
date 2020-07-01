@@ -10,7 +10,7 @@ python -m pip install git+ssh://git@code.wm.edu/IT/software-systems/eispippackag
 
 ## Usage
 
-### Authenticating against the API
+### Authentication
 The library currently support connecting to the API using an SSL certificate:
 ```python
 from msgraph import api
@@ -36,7 +36,7 @@ all_users = user.User.get(api_instance)
 
 To fetch a specific user, you can also include the user's `User Principal Name`, which is the user's email address:
 ```python
-dpfens_instance = user.User.get(api_instance, user='dpfens@wm.edu')
+johndoe_instance = user.User.get(api_instance, user='johndoe@wm.edu')
 ```
 
 ### Calendars & Events
@@ -46,36 +46,36 @@ Now let's fetch the `Calendar`s of a particular user.  To interact with  a `Cale
 ```python
 from msgraph import calendar
 
-dpfens_calendars = calendar.Calendar.get(api_instance, user=dpfens_instance)
+johndoe_calendars = calendar.Calendar.get(api_instance, user=johndoe_instance)
 ```
 
 #### Fetch a User's Events from a given Calendar
-Now let's fetch the `Event` instances from the main calendar of `dpfens`:
+Now let's fetch the `Event` instances from the main calendar of `johndoe`:
 ```python
 calendar_lookup = dict()
-for calendar in dpfens_calendars:
+for calendar in johndoe_calendars:
     calendar_lookup[calendar.name] = calendar
 
 primary_calendar = calendar_lookup['Calendar']
-dpfens_events = calendar.Event.get(dpfens_instance, calendar=primary_calendar)
+johndoe_events = calendar.Event.get(johndoe_instance, calendar=primary_calendar)
 ```
 
 #### Update an Event
 To update an `Event`, we can use the `Event.update` method:
 ```python
-dpfens_event = dpfens_events[0]
-dpfens_event.subject = 'Important meeting'
-dpfens_event.update(api_instance)
+johndoe_event = johndoe_events[0]
+johndoe_event.subject = 'Important meeting'
+johndoe_event.update(api_instance)
 ```
-Now the updates made to the `Event` object have been saved back to the `calendar` of `dpfens`.
+Now the updates made to the `Event` object have been saved back to the `calendar` of `johndoe`.
 
 #### Delete an Event from a Calendar
 Let's try deleting an `Event` on a `Calendar` using the `Event.delete` method:
 ```python
-dpfens_event = dpfens_events[0]
-dpfens_event.delete(api_instance)
+johndoe_event = johndoe_events[0]
+johndoe_event.delete(api_instance)
 ```
-After calling the `delete` method, the `Event` has been removed from the `calendar` of `dpfens`.
+After calling the `delete` method, the `Event` has been removed from the `calendar` of `johndoe`.
 
 
 ### Sharepoint Sites & Lists
