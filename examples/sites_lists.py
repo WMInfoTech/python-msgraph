@@ -1,5 +1,5 @@
 import os
-from msgraph import api, user, sites, files
+from msgraph import api, sites
 
 authority_host_uri = 'https://login.microsoftonline.com'
 tenant = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
