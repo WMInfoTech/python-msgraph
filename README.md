@@ -1,17 +1,22 @@
-# Microsoft Graph
-`msgraph` is a Python wrapper of the [Microsoft Graph](https://developer.microsoft.com/en-us/graph) API.
+# Python-MSGraph
+`python-msgraph` is a Python wrapper of the [Microsoft Graph](https://developer.microsoft.com/en-us/graph) API.
 
 
 ## Installation
-To install the `msgraph` library use the following command:
+To install the `python-msgraph` library use the following command:
 ```bash
-python -m pip install git+ssh://git@github.com:WMInfoTech/python-msgraph.git
+python -m pip install python-msgraph
+```
+or, to build locally and install:
+```bash
+git clone git@github.com:WMInfoTech/python-msgraph.git && cd python-msgraph
+python setup.py install
 ```
 
 ## Usage
 
 ### Authentication
-The library currently support connecting to the API using an SSL certificate:
+The library currently supports connecting to the API using an SSL certificate:
 ```python
 from msgraph import api
 
