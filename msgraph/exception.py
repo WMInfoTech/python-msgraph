@@ -18,7 +18,7 @@ class MicrosoftException(Exception):
         self.code = code
 
 
-class MicrosoftAauthenticationException(MicrosoftException):
+class MicrosoftAuthenticationException(MicrosoftException):
     """
     An exception raised while attempting to authenticate with the Microsoft
     Graph API
