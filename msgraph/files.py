@@ -1,7 +1,7 @@
-try:
-    from urllib import quote_plus
-except ImportError:
-    from urllib.parse import quote_plus
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Drive(object):
@@ -195,6 +195,7 @@ class DriveItem(object):
         else:
             patch_data['parentReference'] = self.parent_reference
         data = api.request(uri, json=patch_data, method='PATCH')
+        logger.info('Moved file %r to %r as %r', self.name, patch_data['parentReference'], new_name)
         self.id = data['id']
         self.parent_reference = data['parentReference']
         self.name = data['name']
@@ -217,6 +218,7 @@ class DriveItem(object):
             uri = 'me/drive/items'
         uri += '/%s/checkin' % self.id
         api.request(uri, method='POST')
+        logger.info('Checked in %r', self.name)
 
     def check_out(self, api, **kwargs):
         group = kwargs.get('group')
@@ -236,6 +238,7 @@ class DriveItem(object):
             uri = 'me/drive/items'
         uri += '/%s/checkout' % self.id
         api.request(uri, method='POST')
+        logger.info('Checked out %r', self.name)
 
     def all_children(self, api, **kwargs):
         group = kwargs.get('group')
@@ -282,6 +285,7 @@ class DriveItem(object):
         uri += '/items/%s' % self.id
         data = dict(name=self.name, description=self.description, parentReference=self.parent_reference, webDavUrl=self.web_dav_url, fileSystemInfo=self.file_system_info)
         api.request(uri, json=data, method='PATCH')
+        logger.info('Updated file %r', self.name)
 
     def delete(self, api, **kwargs):
         group = kwargs.get('group')
@@ -301,6 +305,7 @@ class DriveItem(object):
             uri = 'me/drive'
         uri += '/items/%s' % self.id
         api.request(uri, method='DELETE')
+        logger.info('Deleted file %r from %r', self.name, uri)
 
     @classmethod
     def from_api(cls, data):
@@ -369,6 +374,7 @@ class DriveItem(object):
             '@microsoft.graph.conflictBehavior': kwargs.get('conflict_behavior', 'fail')
         }
         data = api.request(uri, json=post_data, method='POST')
+        logger.info('Created new folder %r under', name, parent)
         return cls.from_api(data)
 
     @classmethod

@@ -247,6 +247,7 @@ class SiteList(object):
         uri = 'sites/%s/lists'
         request_data = dict(displayName=display_name, list=dict(template=template), columns=columns)
         data = api.request(uri, json=request_data, method='POST')
+        logger.info('Created new %s instance: %r', cls.__name__, display_name)
         return cls.from_api(data)
 
 
@@ -308,21 +309,16 @@ class ListItem(object):
             headers['if-match'] = self.etag
         data = dict(eTag=self.etag, name=self.name, description=self.description, parentReference=self.parent_reference)
         api.request(uri, json=data, headers=headers, method='PATCH')
+        logger.info('Updated %s instance: %r', self.__class__.__name__, self.name)
 
     def update_fields(self, api, site, list_instance, **kwargs):
         """
         Updates the ListItem fields in the Microsoft Graph instance
 
-        Warning:
-            This method is experimental, specifically because read-only fields currently need to be specified manually by the user.
-
         Parameters:
             api (msgraph.api.GraphAPI):  The endpoint from which to save data
             site (Site|str): The SharePoint site (or site ID of the Site) the ListItem is associated with
             list_instance (SiteList|str):  The SiteList (or list ID) the ListItem is associated with
-
-        Keyword Arguments:
-            readonly_fields (iterable):  Read-only fields in the ListItem fields dictionary
 
         Returns:
             None
@@ -334,6 +330,7 @@ class ListItem(object):
         data = api.request(uri, json=fields, method='PATCH')
         self.fields.update(data)
         self._dirty_fields = dict()
+        logger.info('Updated %i fields of %r instance %r', len(fields), self.__class__.__name__, self.name)
 
     def delete(self, api, site, list_instance):
         """
@@ -349,6 +346,7 @@ class ListItem(object):
         """
         uri = 'sites/%s/lists/%s/items/%s' % (site, list_instance, self.id)
         api.request(uri, method='DELETE')
+        logger.info('Deleted %s instance %s of from SiteList %r', self.__class__.__name__, self.name, list_instance)
 
     def versions(self, api, site, list_instance, **kwargs):
         """
@@ -425,6 +423,7 @@ class ListItem(object):
         uri = 'sites/%s/lists/%s/items' % (site, list_instance)
         request_data = dict(fields=fields)
         data = api.request(uri, json=request_data, method='POST')
+        logger.info('Created new %s instance on SiteList %r', cls.__name__, list_instance)
         return cls.from_api(data)
 
 
