@@ -149,7 +149,7 @@ class GraphAPI(object):
 
     @staticmethod
     def _authenticate_via_certificate(authority_host_uri, tenant, resource_uri, client_id, client_certificate, certificate_thumbprint):
-        authority_uri = os.path.join(authority_host_uri, tenant)
+        authority_uri = '%s/%s' % (authority_host_uri, tenant)
         try:
             context = adal.AuthenticationContext(authority_uri, api_version=None)
             data = context.acquire_token_with_client_certificate(resource_uri, client_id, client_certificate, certificate_thumbprint)
@@ -179,4 +179,3 @@ class GraphAPI(object):
         """
         access_token = cls._authenticate_via_certificate(authority_host_uri, tenant, resource_uri, client_id, client_certificate, certificate_thumbprint)
         return cls(authority_host_uri, tenant, resource_uri, client_id, access_token, client_certificate=client_certificate, certificate_thumbprint=certificate_thumbprint)
-
