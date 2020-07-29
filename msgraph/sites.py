@@ -1,10 +1,11 @@
 import logging
+from msgraph import base
 
 
 logger = logging.getLogger(__name__)
 
 
-class Site(object):
+class Site(base.Base):
     __slots__ = ('id', 'name', 'display_name', 'description', 'etag', 'root', 'sharepoint_ids', 'site_collection', 'web_url', 'created_datetime', 'last_modified_datetime')
 
     def __init__(self, id, name, display_name, description, etag, root, sharepoint_ids, site_collection, web_url, created_datetime, last_modified_datetime):
@@ -155,7 +156,7 @@ class Site(object):
         return output
 
 
-class SiteList(object):
+class SiteList(base.Base):
     __slots__ = ('id', 'name', 'display_name', 'description', 'list_instance', 'parent_reference', 'web_url', 'created_datetime', 'created_by', 'last_modified_datetime', 'last_modified_by')
 
     def __init__(self, id, name, display_name, description, list_instance, parent_reference, web_url, created_datetime, created_by, last_modified_datetime, last_modified_by):
@@ -251,7 +252,7 @@ class SiteList(object):
         return cls.from_api(data)
 
 
-class ListItem(object):
+class ListItem(base.Base):
     __slots__ = ('id', 'etag', 'content_type', 'parent_reference', 'name', 'description', 'fields', 'created_datetime', 'created_by', 'last_modified_datetime', 'last_modified_by', '_dirty_fields')
 
     def __init__(self, id, etag, content_type, parent_reference, name, description, fields, created_datetime, created_by, last_modified_datetime, last_modified_by):
@@ -415,7 +416,7 @@ class ListItem(object):
             list_instance (SiteList|str):  The SiteList (or list ID) the ListItems are associated with
 
         Keyword Arguments:
-            fields (object): The fields to save in the ListItem instance
+            fields (base.Base): The fields to save in the ListItem instance
 
         Returns:
             ListItem: The newly created ListItem instance associated with the Site and List
@@ -427,7 +428,7 @@ class ListItem(object):
         return cls.from_api(data)
 
 
-class Analytics(object):
+class Analytics(base.Base):
     __slots__ = ('all_time', 'last_seven_days')
 
     def __init__(self, all_time, last_seven_days):

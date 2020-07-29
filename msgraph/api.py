@@ -114,7 +114,7 @@ class GraphAPI(object):
         version = kwargs.get('version', '1.0')
         method = kwargs.pop('method', 'GET')
         if self.resource_uri not in uri:
-            url = os.path.join(self.resource_uri, 'v%s' % version, uri)
+            url = '%s/%s/%s' % (self.resource_uri, 'v%s' % version, uri)
         else:
             url = uri
         token = str(self._access_token)

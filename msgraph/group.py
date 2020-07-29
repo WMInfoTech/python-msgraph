@@ -1,12 +1,11 @@
 import logging
-from datetime import datetime
+from msgraph import base
 
 
 logger = logging.getLogger(__name__)
-date_format = '%Y-%m-dT%H:%M:%SZ'
 
 
-class Group(object):
+class Group(base.Base):
     """
     Azure Active Directory (Azure AD) group.  Represents an Azure Active Directory (Azure AD) group, which can be an Office 365 group, or a security group.
 
@@ -102,37 +101,37 @@ class Group(object):
         id = data['id']
         raw_deleted_datetime = data['deletedDateTime']
         if raw_deleted_datetime:
-            deleted_datetime = datetime.strptime(deleted_datetime, datetime_format)
+            deleted_datetime = cls.parse_date_time(raw_deleted_datetime)
         else:
             deleted_datetime = None
         classification = data['classification']
         raw_created_datetime = data['createdDateTime']
         if raw_created_datetime:
-            created_datetime = datetime.strptime(raw_created_datetime, datetime_format)
+            created_datetime = cls.parse_date_time(raw_created_datetime)
         else:
             created_datetime = None
         creation_options = data['creationOptions']
         description = data['description']
-        display_name = data['display_name']
+        display_name = data['displayName']
         group_types = data['group_types']
-        email_address = data['email_address']
-        mail_enabled = data['mail_enabled']
-        mail_nickname = data['mail_nickname']
-        on_premises_last_sync_datetime = data['on_premises_last_sync_datetime']
-        on_premises_security_identifier = data['on_premises_security_identifier']
-        on_premises_sync_enabled = data['on_premises_sync_enabled']
-        preferred_data_location = data['preferred_data_location']
-        proxy_addresses = data['proxy_addresses']
-        raw_renewed_date_time = data['renewed_date_time']
+        email_address = data['emailAddress']
+        mail_enabled = data['mailEnabled']
+        mail_nickname = data['mailNickname']
+        on_premises_last_sync_datetime = data['onPremisesLastSyncDatetime']
+        on_premises_security_identifier = data['onPremisesSecurityIdentifier']
+        on_premises_sync_enabled = data['onPremisesSyncEnabled']
+        preferred_data_location = data['preferredDataLocation']
+        proxy_addresses = data['proxyAddresses']
+        raw_renewed_date_time = data['renewedDateTime']
         if raw_renewed_date_time:
-            renewed_date_time = datetime.strptime(raw_renewed_date_time, datetime_format)
+            renewed_date_time = cls.parse_date_time(raw_renewed_date_time)
         else:
             renewed_date_time = None
-        resource_behavior_options = data['resource_behavior_options']
-        resource_provisioning_options = data['resource_provisioning_options']
-        security_enabled = data['security_enabled']
+        resource_behavior_options = data['resourceBehaviorOptions']
+        resource_provisioning_options = data['resourceProvisioningOptions']
+        security_enabled = data['securityEnabled']
         visibility = data['visibility']
-        on_premises_provisioning_errors = data['on_premises_provisioning_errors']
+        on_premises_provisioning_errors = data['onPremisesProvisioningErrors']
         return cls(id, deleted_datetime, classification, created_datetime, creation_options, description, display_name, group_types, email_address, mail_enabled, mail_nickname, on_premises_last_sync_datetime, on_premises_security_identifier, on_premises_sync_enabled, preferred_data_location, proxy_addresses, renewed_date_time, resource_behavior_options, resource_provisioning_options, security_enabled, visibility, on_premises_provisioning_errors)
 
     @classmethod

@@ -1,28 +1,10 @@
 import logging
-from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
 
-date_format = '%Y-%m-%d'
-datetime_format = date_format + 'T%H:%M:%S'
-full_datetime_format = date_format + 'T%H:%M:%S.%f'
-extended_datetime_format = date_format + 'T%H:%M:%S.%fZ'
 
-
-def parse_date_times(text):
-    instance = None
-    for format in [extended_datetime_format, full_datetime_format, datetime_format, date_format]:
-        try:
-            instance = datetime.strptime(text, format)
-        except Exception:
-            pass
-        else:
-            break
-    return instance
-
-
-class Calendar(object):
+class Calendar(base.Base)
     __slots__ = ('id', 'name', 'owner', 'color', 'can_edit', 'can_share', 'can_view_private_items', 'change_key')
 
     def __init__(self, id, name, owner, color, can_edit, can_share, can_view_private_items, change_key):
@@ -136,7 +118,7 @@ class Calendar(object):
         return output
 
 
-class Location(object):
+class Location(base.Base)
     __slots__ = ('display_name', 'location_type', 'unique_id', 'unique_id_type')
 
     def __init__(self, display_name, location_type, unique_id, unique_id_type):
@@ -160,7 +142,7 @@ class Location(object):
         return cls(display_name, location_type, unique_id, unique_id_type)
 
 
-class Attendee(object):
+class Attendee(base.Base)
     __slots__ = ('name', 'email_address', 'type', 'status', 'response_time')
 
     def __init__(self, name, email_address, type, status, response_time):
@@ -188,11 +170,11 @@ class Attendee(object):
         status = status_data.get('response')
         response_time = status_data.get('time')
         if response_time:
-            response_time = parse_date_times(response_time)
+            response_time = cls.parse_date_time(response_time)
         return cls(name, email_address, type, status, response_time)
 
 
-class Category(object):
+class Category(base.Base)
     __slots__ = ('id', 'display_name', 'color')
 
     def __init__(self, id, display_name, color):
@@ -313,7 +295,7 @@ class Category(object):
         return instance
 
 
-class Range(object):
+class Range(base.Base)
     __slots__ = ('type', 'start_date', 'end_date')
 
     def __init__(self, type, start_date, end_date):
@@ -325,19 +307,19 @@ class Range(object):
         return '<%s %s type=%r start_date=%r, end_date=%r>' % (self.__class__.__name__, id(self), self.type, self.start_date, self.end_date)
 
     def to_dict(self):
-        start_date = self.start_date.strftime(date_format)
-        end_date = self.end_date.strftime(date_format)
+        start_date = self.start_date.strftime(self.date_format)
+        end_date = self.end_date.strftime(self.date_format)
         return dict(type=type, startDate=start_date, endDate=end_date)
 
     @classmethod
     def from_api(cls, data):
         type = data['type']
-        start_date = parse_date_times(data['startDate'])
-        end_date = parse_date_times(data['endDate'])
+        start_date = cls.parse_date_time(data['startDate'])
+        end_date = cls.parse_date_time(data['endDate'])
         return cls(type, start_date, end_date)
 
 
-class DateTime(object):
+class DateTime(base.Base)
     __slots__ = ('date_time', 'time_zone')
 
     def __init__(self, date_time, time_zone):
@@ -348,19 +330,19 @@ class DateTime(object):
         return '<%s %s date_time=%r, time_zone=%r>' % (self.__class__.__name__, id(self), self.date_time, self.time_zone)
 
     def to_dict(self):
-        date_time = self.date_time.strftime(datetime_format)
+        date_time = self.date_time.strftime(self.datetime_format)
         time_zone = self.time_zone
         return dict(dateTime=date_time, timeZone=time_zone)
 
     @classmethod
     def from_api(cls, data):
         date_time = data['dateTime']
-        date_time = parse_date_times(date_time[:26])
+        date_time = cls.parse_date_time(date_time[:26])
         time_zone = data['timeZone']
         return cls(date_time, time_zone)
 
 
-class Event(object):
+class Event(base.Base)
     __slots__ = ('id', 'ical_uid', 'series_master_id', 'type', 'categories', 'subject', 'body', 'body_preview', 'attendees', 'locations', 'location', 'start', 'original_start', 'original_start_time_zone', 'end', 'original_end', 'original_end_time_zone', 'is_all_day', 'is_cancelled', 'is_reminder_on', 'is_organizer', 'organizer', 'importance', 'sensitivity', 'recurrence', 'response_requested', 'response_status', 'reminder_minutes_before_start', 'show_as', 'online_meeting_url', 'web_link', 'has_attachments', 'attachments', 'calendar', 'extensions', 'instances', 'multi_value_extended_properties', 'single_value_extended_properties', 'created_at', 'last_modified', 'removed')
 
     def __init__(self, id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified, removed):
@@ -522,12 +504,12 @@ class Event(object):
         start = DateTime.from_api(data['start'])
         original_start = data.get('originalStart')
         if original_start:
-            original_start = parse_date_times(original_start[:26])
+            original_start = cls.parse_date_time(original_start[:26])
         original_start_time_zone = data.get('originalStartTimeZone')
         end = DateTime.from_api(data['end'])
         original_end = data.get('originalEnd')
         if original_end:
-            original_end = parse_date_times(original_end[:26])
+            original_end = cls.parse_date_time(original_end[:26])
         original_end_time_zone = data.get('originalEndTimeZone')
         is_all_day = data['isAllDay']
         is_cancelled = data['isCancelled']
@@ -553,8 +535,8 @@ class Event(object):
         instances = data.get('instances', [])
         multi_value_extended_properties = data.get('multiValueEextendedProperties', [])
         single_value_extended_properties = data.get('singleValueExtendedProperties', [])
-        created_at = parse_date_times(data['createdDateTime'][:26])
-        last_modified = parse_date_times(data['lastModifiedDateTime'][:26])
+        created_at = cls.parse_date_time(data['createdDateTime'][:26])
+        last_modified = cls.parse_date_time(data['lastModifiedDateTime'][:26])
         removed = data.get('@removed')
         return cls(id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified, removed)
 
@@ -579,8 +561,8 @@ class Event(object):
         """
         fields = kwargs.get('fields', ['id', 'seriesMasterId', 'type', 'categories', 'subject', 'body', 'bodyPreview', 'attendees', 'locations', 'location', 'start', 'end', 'isAllDay', 'isCancelled', 'isReminderOn', 'isOrganizer', 'originalStart', 'originalStartTimeZone', 'originalEndTimeZone', 'organizer', 'importance', 'sensitivity', 'recurrence', 'responseRequested', 'responseStatus', 'reminderMinutesBeforeStart', 'showAs', 'onlineMeetingUrl', 'webLink', 'hasAttachments', 'attachments', 'calendar', 'extensions', 'instances', 'createdDateTime', 'lastModifiedDateTime'])
         user = kwargs.get('user')
-        start_formatted = start.strftime(datetime_format)
-        end_formatted = end.strftime(datetime_format)
+        start_formatted = start.strftime(cls.datetime_format)
+        end_formatted = end.strftime(cls.datetime_format)
         if user:
             uri = 'users/%s/calendarView/delta' % user
         else:
@@ -689,7 +671,7 @@ class Event(object):
             sensitivity (str):  Sensitivity of the Event.  Possible values are: normal, personal, private, confidential
             recurrence (dict): The recurrence pattern for the Event
             response_requested (bool):  Indicates if potential attendees need to respond
-            response_status (object): Indicates the type of response sent in response to an event message.
+            response_status (base.Base) Indicates the type of response sent in response to an event message.
             reminder_minutes_before_start (int): The number of minutes before the event start time that the reminder alert occurs.
             show_as (str):  The status to show for the User during the Event
         """
@@ -737,7 +719,7 @@ class Event(object):
         return instance
 
 
-class Group(object):
+class Group(base.Base)
     __slots__ = ('id', 'name', 'class_id', 'change_key')
 
     def __init__(self, id, name, class_id, change_key):
@@ -856,7 +838,7 @@ class Group(object):
         return instance
 
 
-class Attachment(object):
+class Attachment(base.Base)
     """
     Attachment instance representing a file attachment to an Event
 
@@ -886,14 +868,14 @@ class Attachment(object):
         return '<%s %s id=%r, name=%r, is_inline=%s, size=%r, last_modified_datetime=%r>' % (self.__class__.__name__, id(self), self.id, self.name, self.is_inline, self.size, self.last_modified_datetime)
 
     @classmethod
-    def from_api(self, data):
+    def from_api(cls, data):
         id = data['id']
         name = data['name']
         is_inline = data['isInline']
         size = data['size']
         raw_last_modified_datetime = data['lastModifiedDateTime']
         if raw_last_modified_datetime:
-            last_modified_datetime = datetime.strptime(raw_last_modified_datetime[:-1], datetime_format)
+            last_modified_datetime = cls.parse_date_time(raw_last_modified_datetime[:-1])
         return cls(id, name, is_inline, size, content_id, content_type, content_location, content_bytes, last_modified_datetime)
 
     @classmethod
@@ -1003,7 +985,7 @@ class FileAttachment(Attachment):
         content_location = data['contentLocation']
         content_bytes = data['contentBytes']
         if raw_last_modified_datetime:
-            last_modified_datetime = datetime.strptime(raw_last_modified_datetime[:-1], datetime_format)
+            last_modified_datetime = cls.parse_date_time(raw_last_modified_datetime[:-1])
         return cls(id, name, is_inline, size, content_id, content_type, content_location, content_bytes, last_modified_datetime)
 
     @classmethod

@@ -1,15 +1,12 @@
 import logging
-from datetime import datetime
+from msgraph import base
 
 
 logger = logging.getLogger(__name__)
 
-date_format = '%Y-%m-%d'
-datetime_format = date_format + 'T%H:%M:%S'
-full_datetime_format = date_format + 'T%H:%M:%S.%f'
 
 
-class User(object):
+class User(base.Base):
     """
     Represents a User in Microsoft Graph
 
@@ -96,7 +93,7 @@ class User(object):
         password_profile = data.get('passwordProfile')
         created_at = data.get('createdDateTime')
         if created_at:
-            created_at = datetime.strptime(created_at[:-1], datetime_format)
+            created_at = cls.parse_date_time(created_at[:-1])
         removed = data.get('@removed')
         return cls(id, display_name, email_address, preferred_language, user_principal_name, office_location, job_title, given_name, surname, mobile_phone, business_phones, mail_nickname, account_enabled, password_profile, created_at, removed)
 

@@ -1,10 +1,10 @@
 import logging
-
+from msgraph import base
 
 logger = logging.getLogger(__name__)
 
 
-class Drive(object):
+class Drive(base.Base):
     __slots__ = ('id', 'name', 'description', 'drive_type', 'root', 'owner', 'quote', 'sharepoint_ids', 'special', 'items', 'following', 'created_at', 'created_by', 'last_modified_at', 'last_modified_by')
 
     def __init__(self, id, name, description, drive_type, root, owner, quote, sharepoint_ids, special, items, following, created_at, created_by, last_modified_at, last_modified_by):
@@ -43,9 +43,17 @@ class Drive(object):
         special = data.get('special')
         items = data.get('items')
         following = data.get('following')
-        created_at = data.get('createdDateTime')
+        raw_created_at = data.get('createdDateTime')
+        if raw_created_at:
+            created_at = cls.parse_date_time(raw_created_at)
+        else:
+            created_at = None
         created_by = data.get('createdBy')
-        last_modified_at = data.get('lastModifiedDateTime')
+        raw_last_modified_at = data.get('lastModifiedDateTime')
+        if raw_last_modified_at:
+            last_modified_at = cls.parse_date_time(raw_last_modified_at)
+        else:
+            last_modified_at = None
         last_modified_by = data.get('lastModifiedBy')
         return cls(id, name, description, drive_type, root, owner, quote, sharepoint_ids, special, items, following, created_at, created_by, last_modified_at, last_modified_by)
 
@@ -119,7 +127,7 @@ class Drive(object):
         return output
 
 
-class DriveItem(object):
+class DriveItem(base.Base):
     __slots__ = ('id', 'name', 'description', 'etag', 'ctag', 'parent_reference', 'root', 'web_url', 'audio', 'content', 'file', 'file_system_info', 'folder', 'image', 'location', 'package', 'photo', 'publication', 'remote_item', 'search_result', 'shared', 'sharepoint_ids', 'size', 'special_folder', 'video', 'web_dav_url', 'activity', 'analytics', 'children', 'permissions', 'subscriptions', 'thumbnails', 'versions', 'created_by_user', 'last_modified_user', 'created_at', 'created_by', 'last_modified_at', 'last_modified_by')
 
     def __init__(self, id, name, description, etag, ctag, parent_reference, root, web_url, audio, content, file, file_system_info, folder, image, location, package, photo, publication, remote_item, search_result, shared, sharepoint_ids, size, special_folder, video, web_dav_url, activity, analytics, children, permissions, subscriptions, thumbnails, versions, created_by_user, last_modified_user, created_at, created_by, last_modified_at, last_modified_by):
@@ -344,9 +352,17 @@ class DriveItem(object):
         versions = data.get('versions')
         created_by_user = data.get('createdByUser')
         last_modified_user = data.get('lastModifiedUser')
-        created_at = data.get('createdDateTime')
+        raw_created_at = data.get('createdDateTime')
+        if raw_created_at:
+            created_at = cls.parse_date_time(raw_created_at)
+        else:
+            created_at = None
         created_by = data.get('createdBy')
-        last_modified_at = data.get('lastModifiedDateTime')
+        raw_last_modified_at = data.get('lastModifiedDateTime')
+        if raw_last_modified_at:
+            last_modified_at = cls.parse_date_time(raw_last_modified_at)
+        else:
+            last_modified_at = None
         last_modified_by = data.get('lastModifiedBy')
         return cls(id, name, description, etag, ctag, parent_reference, root, web_url, audio, content, file, file_system_info, folder, image, location, package, photo, publication, remote_item, search_result, shared, sharepoint_ids, size, special_folder, video, web_dav_url, activity, analytics, children, permissions, subscriptions, thumbnails, versions, created_by_user, last_modified_user, created_at, created_by, last_modified_at, last_modified_by)
 
