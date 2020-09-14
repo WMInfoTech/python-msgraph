@@ -1,10 +1,11 @@
 import logging
+from msgraph import base
 
 
 logger = logging.getLogger(__name__)
 
 
-class Calendar(base.Base)
+class Calendar(base.Base):
     __slots__ = ('id', 'name', 'owner', 'color', 'can_edit', 'can_share', 'can_view_private_items', 'change_key')
 
     def __init__(self, id, name, owner, color, can_edit, can_share, can_view_private_items, change_key):
@@ -118,7 +119,7 @@ class Calendar(base.Base)
         return output
 
 
-class Location(base.Base)
+class Location(base.Base):
     __slots__ = ('display_name', 'location_type', 'unique_id', 'unique_id_type')
 
     def __init__(self, display_name, location_type, unique_id, unique_id_type):
@@ -142,7 +143,7 @@ class Location(base.Base)
         return cls(display_name, location_type, unique_id, unique_id_type)
 
 
-class Attendee(base.Base)
+class Attendee(base.Base):
     __slots__ = ('name', 'email_address', 'type', 'status', 'response_time')
 
     def __init__(self, name, email_address, type, status, response_time):
@@ -156,15 +157,18 @@ class Attendee(base.Base)
         return '<%s %s name=%r, email_address=%r, type=%r, status=%s, response_time=%s>' % (self.__class__.__name__, id(self), self.name, self.email_address, self.type, self.status, self.response_time)
 
     def to_dict(self):
-        email_address = dict(name=self.name, emailAddress=self.address)
-        status = dict(response=self.status, time=self.response_time)
+        email_address = dict(name=self.name, emailAddress=self.email_address)
+        response_time = self.response_time
+        if response_time:
+            response_time = response_time.strftime(self.datetime_format)
+        status = dict(response=self.status, time=response_time)
         return dict(emailAddress=email_address, status=status, type=self.type)
 
     @classmethod
     def from_api(cls, data):
         email_data = data['emailAddress']
         name = email_data['name']
-        email_address = email_data['address']
+        email_address = email_data.get('address')
         type = data.get('type')
         status_data = data.get('status', dict())
         status = status_data.get('response')
@@ -174,7 +178,7 @@ class Attendee(base.Base)
         return cls(name, email_address, type, status, response_time)
 
 
-class Category(base.Base)
+class Category(base.Base):
     __slots__ = ('id', 'display_name', 'color')
 
     def __init__(self, id, display_name, color):
@@ -295,7 +299,7 @@ class Category(base.Base)
         return instance
 
 
-class Range(base.Base)
+class Range(base.Base):
     __slots__ = ('type', 'start_date', 'end_date')
 
     def __init__(self, type, start_date, end_date):
@@ -309,7 +313,7 @@ class Range(base.Base)
     def to_dict(self):
         start_date = self.start_date.strftime(self.date_format)
         end_date = self.end_date.strftime(self.date_format)
-        return dict(type=type, startDate=start_date, endDate=end_date)
+        return dict(type=self.type, startDate=start_date, endDate=end_date)
 
     @classmethod
     def from_api(cls, data):
@@ -319,7 +323,7 @@ class Range(base.Base)
         return cls(type, start_date, end_date)
 
 
-class DateTime(base.Base)
+class DateTime(base.Base):
     __slots__ = ('date_time', 'time_zone')
 
     def __init__(self, date_time, time_zone):
@@ -330,7 +334,9 @@ class DateTime(base.Base)
         return '<%s %s date_time=%r, time_zone=%r>' % (self.__class__.__name__, id(self), self.date_time, self.time_zone)
 
     def to_dict(self):
-        date_time = self.date_time.strftime(self.datetime_format)
+        date_time = self.date_time
+        if date_time:
+            date_time = date_time.strftime(self.datetime_format)
         time_zone = self.time_zone
         return dict(dateTime=date_time, timeZone=time_zone)
 
@@ -342,7 +348,7 @@ class DateTime(base.Base)
         return cls(date_time, time_zone)
 
 
-class Event(base.Base)
+class Event(base.Base):
     __slots__ = ('id', 'ical_uid', 'series_master_id', 'type', 'categories', 'subject', 'body', 'body_preview', 'attendees', 'locations', 'location', 'start', 'original_start', 'original_start_time_zone', 'end', 'original_end', 'original_end_time_zone', 'is_all_day', 'is_cancelled', 'is_reminder_on', 'is_organizer', 'organizer', 'importance', 'sensitivity', 'recurrence', 'response_requested', 'response_status', 'reminder_minutes_before_start', 'show_as', 'online_meeting_url', 'web_link', 'has_attachments', 'attachments', 'calendar', 'extensions', 'instances', 'multi_value_extended_properties', 'single_value_extended_properties', 'created_at', 'last_modified', 'removed')
 
     def __init__(self, id, ical_uid, series_master_id, type, categories, subject, body, body_preview, attendees, locations, location, start, original_start, original_start_time_zone, end, original_end, original_end_time_zone, is_all_day, is_cancelled, is_reminder_on, is_organizer, organizer, importance, sensitivity, recurrence, response_requested, response_status, reminder_minutes_before_start, show_as, online_meeting_url, web_link, has_attachments, attachments, calendar, extensions, instances, multi_value_extended_properties, single_value_extended_properties, created_at, last_modified, removed):
@@ -719,7 +725,7 @@ class Event(base.Base)
         return instance
 
 
-class Group(base.Base)
+class Group(base.Base):
     __slots__ = ('id', 'name', 'class_id', 'change_key')
 
     def __init__(self, id, name, class_id, change_key):
@@ -838,7 +844,7 @@ class Group(base.Base)
         return instance
 
 
-class Attachment(base.Base)
+class Attachment(base.Base):
     """
     Attachment instance representing a file attachment to an Event
 
@@ -1009,4 +1015,36 @@ class FileAttachment(Attachment):
         """
         data_type = "#microsoft.graph.fileAttachment"
         instance = super(FileAttachment, cls).create(api, event, name, content, data_type, **kwargs)
+        return instance
+
+
+class Permission(object):
+
+    def __init__(self, id, email_address, role, allowed_roles, is_removeable, is_inside_organization):
+        self.id = id
+        self.email_address = email_address
+        self.role = role
+        self.allowed_roles = allowed_roles
+        self.is_removeable = is_removeable
+        self.is_inside_organization = is_inside_organization
+
+    def __repr__(self):
+        return '<%s %s id=%r, role=%r>' % (self.__class__.__name__, id(self), self.id, self.role)
+
+    @classmethod
+    def from_api(cls, data):
+        id = data['id']
+        email_address = data['emailAddress']
+        role = data['role']
+        allowed_roles = data['allowedRoles']
+        is_removeable = data['isRemoveable']
+        is_inside_organization = data['isInsideOrganization']
+        return cls(id, email_address, role, allowed_roles, is_removeable, is_inside_organization)
+
+    @classmethod
+    def by_user(cls, api, user, calendar):
+        uri = 'users/%s/calendar/calendarPermissions/%s' % (user, calendar)
+        print(uri)
+        results = api.request(uri)
+        instance = cls.from_api(results)
         return instance
