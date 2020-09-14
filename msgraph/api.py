@@ -154,9 +154,9 @@ class GraphAPI(object):
             context = adal.AuthenticationContext(authority_uri, api_version=None)
             data = context.acquire_token_with_client_certificate(resource_uri, client_id, client_certificate, certificate_thumbprint)
         except Exception as e:
-            message = "Failed to authenticate with %r:%" % (resource_uri, e)
+            message = "Failed to authenticate with %r:%r" % (resource_uri, e)
             logger.error('%r: %r', message, e.message, exc_info=1)
-            raise exception.MicrosoftAuthenticationException(e.code, e.message)
+            raise exception.MicrosoftAuthenticationException('ADAL', e.message)
         else:
             access_token = Token.from_api(data)
             return access_token
