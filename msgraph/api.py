@@ -153,10 +153,17 @@ class GraphAPI(object):
         try:
             context = adal.AuthenticationContext(authority_uri, api_version=None)
             data = context.acquire_token_with_client_certificate(resource_uri, client_id, client_certificate, certificate_thumbprint)
+        except adal.adal_error.AdalError as e:
+            if isinstance(e.error_response, dict):
+                code = e.error_response.get('error_codes')
+                message = e.error_response['error_description']
+            else:
+                code = e.error_response
+                message = str(e)
+            logger.error(repr(e), exc_info=True)
+            raise exception.MicrosoftAuthenticationException(code, message)
         except Exception as e:
-            message = "Failed to authenticate with %r:%r" % (resource_uri, e)
-            logger.error('%r: %r', message, e.message, exc_info=1)
-            raise exception.MicrosoftAuthenticationException('ADAL', e.message)
+            raise e
         else:
             access_token = Token.from_api(data)
             return access_token
@@ -176,6 +183,10 @@ class GraphAPI(object):
 
         Returns:
             GraphAPI:  The authenticated API instance
+
+        Raises:
+            MicrosoftAuthenticationException: failed to authenticate using the provided parameters
+            Exception: An unknown error occurred
         """
         access_token = cls._authenticate_via_certificate(authority_host_uri, tenant, resource_uri, client_id, client_certificate, certificate_thumbprint)
         return cls(authority_host_uri, tenant, resource_uri, client_id, access_token, client_certificate=client_certificate, certificate_thumbprint=certificate_thumbprint)
