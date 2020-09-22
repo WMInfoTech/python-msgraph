@@ -1,7 +1,6 @@
 import logging
 import adal
 import requests
-import os
 from . import exception
 
 

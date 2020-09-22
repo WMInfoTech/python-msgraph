@@ -609,6 +609,57 @@ class Event(base.Base):
         group = kwargs.get('group')
         calendar = kwargs.get('calendar')
 
+        if user:
+            uri = 'users/%s/' % user
+        else:
+            uri = 'me/'
+
+        if group:
+            uri += 'calendargroups/%s/' % group
+
+        if calendar:
+            uri += 'calendars/%s/' % calendar
+        uri += 'events'
+
+        parameters = dict()
+        parameters['$top'] = kwargs.get('page_size', 100)
+        if raw_filters:
+            parameters['$filter'] = ' and '.join(raw_filters)
+        if fields:
+            parameters['$select'] = ','.join(fields)
+
+        data = api.request(uri, params=parameters)
+        output = [cls.from_api(row) for row in data.get('value', [])]
+        while data.get("@odata.nextLink"):
+            uri = data.get("@odata.nextLink")
+            data = api.request(uri)
+            output += [cls.from_api(row) for row in data.get('value', [])]
+        return output
+
+    @classmethod
+    def instances(cls, api, event, **kwargs):
+        """
+        Fetch the Events from the API endpoint
+
+        Parameters:
+            api (msgraph.api.GraphAPI):  The endpoint in which to create the Group instance
+            event (msgraph.calendar.Event):  The event for which to fetch instances for
+
+        Keyword Parameters:
+            user (msgraph.user.User):  The User instance for which to fetch Events for
+            group (Group):  The Group for which to fetch Events for
+            calendar (Calendar):  The Calendar for which to fetch Events for
+            page_size (int):  The number of items to include in each page, default: 100
+
+        Returns:
+            list: Event instances
+        """
+        fields = kwargs.get('fields', ['id', 'seriesMasterId', 'type', 'categories', 'subject', 'body', 'bodyPreview', 'attendees', 'locations', 'location', 'start', 'end', 'isAllDay', 'isCancelled', 'isReminderOn', 'isOrganizer', 'originalStart', 'originalStartTimeZone', 'originalEndTimeZone', 'organizer', 'importance', 'sensitivity', 'recurrence', 'responseRequested', 'responseStatus', 'reminderMinutesBeforeStart', 'showAs', 'onlineMeetingUrl', 'webLink', 'hasAttachments', 'attachments', 'calendar', 'extensions', 'instances', 'createdDateTime', 'lastModifiedDateTime'])
+        raw_filters = kwargs.get('raw_filters', [])
+        user = kwargs.get('user')
+        group = kwargs.get('group')
+        calendar = kwargs.get('calendar')
+
         start = kwargs.get('start')
         end = kwargs.get('end')
 
@@ -622,7 +673,7 @@ class Event(base.Base):
 
         if calendar:
             uri += 'calendars/%s/' % calendar
-        uri += 'events'
+        uri += 'events/%s/instances' % event
 
         parameters = dict()
         parameters['$top'] = kwargs.get('page_size', 100)
@@ -1044,7 +1095,6 @@ class Permission(object):
     @classmethod
     def by_user(cls, api, user, calendar):
         uri = 'users/%s/calendar/calendarPermissions/%s' % (user, calendar)
-        print(uri)
         results = api.request(uri)
         instance = cls.from_api(results)
         return instance
