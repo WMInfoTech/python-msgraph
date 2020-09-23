@@ -228,13 +228,13 @@ class StaffMember(base.Base):
     @classmethod
     def from_api(cls, data):
         id = data['id']
-        display_name = data['display_name']
-        email_address = data['email_address']
+        display_name = data['displayName']
+        email_address = data['emailAddress']
         role = data['role']
-        working_hours = [WorkingHours.from_api(item) for item in data['working_hours']]
-        use_business_hours = data['use_business_hours']
-        availability_is_affected_by_personal_calendar = data['availability_is_affected_by_personal_calendar']
-        color_index = data['color_index']
+        working_hours = [WorkingHours.from_api(item) for item in data['workingHours']]
+        use_business_hours = data['useBusinessHours']
+        availability_is_affected_by_personal_calendar = data['availabilityIsAffectedByPersonalCalendar']
+        color_index = data['colorIndex']
         return cls(id, display_name, email_address, role, working_hours, use_business_hours, availability_is_affected_by_personal_calendar, color_index)
 
     @classmethod
