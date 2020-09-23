@@ -164,14 +164,7 @@ class Group(base.Base):
     @classmethod
     def create(cls, api, display_name, mail_enabled, mail_nickname, security_enabled, **kwargs):
         """
-        Fetches User instances from the API endpoint that were created from a certain point forward
-
-        If a uri is not specified, will return a list users created since the beginning of time.
-        The process will return a list of User instances along with a deltaLink.  The deltaLink
-        should be used during the next execution to fetch all User instances that were created/updated
-        since the previous execution when the deltaLink was obtained.
-
-        For more information see: https://docs.microsoft.com/en-us/graph/delta-query-users
+        creates a new Group instance at the API endpoint
 
         Parameters:
             api (msgraph.api.GraphAPI):  The endpoint in which to create the Group
@@ -191,10 +184,10 @@ class Group(base.Base):
         members = kwargs.get('members', [])
 
         data = {
-            'displayName': self.display_name,
-            'mailEnabled': self.mail_enabled,
-            'mailNickname': self.mail_nickname,
-            'securityEnabled': self.security_enabled,
+            'displayName': display_name,
+            'mailEnabled': mail_enabled,
+            'mailNickname': mail_nickname,
+            'securityEnabled': security_enabled,
             'owners': owners,
             'members': members
         }
