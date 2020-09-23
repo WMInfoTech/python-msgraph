@@ -113,7 +113,7 @@ class Group(base.Base):
         creation_options = data['creationOptions']
         description = data['description']
         display_name = data['displayName']
-        group_types = data['group_types']
+        group_types = data['groupTypes']
         email_address = data['emailAddress']
         mail_enabled = data['mailEnabled']
         mail_nickname = data['mailNickname']
