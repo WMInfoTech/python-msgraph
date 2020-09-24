@@ -1,55 +1,9 @@
 import logging
-import adal
 import requests
 from . import exception
 
 
 logger = logging.getLogger(__name__)
-
-
-class Token(object):
-    """
-    Wraps the authenticated API token
-
-    Attributes:
-        expires_in (str):  The time from when the token was created until when it expires
-        expires_on (datetime):  The datetime of when the token expires
-        resource (str):  The resource for which a token is valid
-        token_type (str):  The specific type of token
-        access_token (str):  The actual token string used to interface with the API endpoint
-    """
-    __slots__ = ('expires_in', 'expires_on', 'resource', 'token_type', 'access_token')
-
-    def __init__(self, expires_in, expires_on, resource, token_type, access_token):
-        self.expires_in = expires_in
-        self.expires_on = expires_on
-        self.resource = resource
-        self.token_type = token_type
-        self.access_token = access_token
-
-    def __str__(self):
-        return '%s %s' % (self.token_type, self.access_token)
-
-    def __repr__(self):
-        return '<%s %s resource=%r, token_type=%r, access_token=%r, expires_on=%r>' % (self.__class__.__name__, id(self), self.resource, self.token_type, self.access_token, self.expires_on)
-
-    @classmethod
-    def from_api(cls, data):
-        """
-        Constructs a Token instance from an API response
-
-        Parameters:
-            data (dict):  The data returned from API response
-
-        Returns:
-            Token: The Token instance
-        """
-        expires_in = data['expiresIn']
-        expires_on = data['expiresOn']
-        resource = data['resource']
-        token_type = data['tokenType']
-        access_token = data['accessToken']
-        return cls(expires_in, expires_on, resource, token_type, access_token)
 
 
 class GraphAPI(object):
@@ -59,37 +13,33 @@ class GraphAPI(object):
     See https://github.com/Azure-Samples/data-lake-analytics-python-auth-options/blob/master/sample.py#L65-L82
 
     Attributes:
-        authority_host_uri (str):  The service to login through
-        tenant (str): The tenant ID of the instance
         resource_uri (str): The host of the API service
-        client_id (str):  The client ID
-        client_certificate (str): The contents of the authenticating SSL certificate
-        client_thumbprint (str): The thumbprint corresponding to the client_certificate
 
     Example:
-        import api
-        authority_host_uri = 'https://login.microsoftonline.com'
+        from msgraph import api
+        authority = 'https://login.microsoftonline.com'
         tenant = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
         resource_uri = 'https://graph.microsoft.com'
         client_id = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
         client_thumbprint = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
         client_certificate = '-----BEGIN RSA PRIVATE KEY-----...'
 
-        endpoint = api.GraphAPI.from_certificate(authority_host_uri, tenant, resource_uri, client_id, client_certificate, client_thumbprint)
+        client_credential = dict(thumbprint=client_thumbprint, private_key=client_certificate)
+        app = msal.ConfidentialClientApplication(client_id, authority=authority_host_uri, client_credential=client_credential)
+
+        access_token_data = app.acquire_token_for_client(scopes=scope)
+        if 'access_token' not in access_token_data:
+            raise ValueError(access_token_data['error_description'])
+        instance = api.GraphAPI(resource_uri, access_token)
     """
 
-    def __init__(self, authority_host_uri, tenant, resource_uri, client_id, access_token, **kwargs):
-        self.authority_host_uri = authority_host_uri
-        self.tenant = tenant
+    def __init__(self, resource_uri, access_token, **kwargs):
         self.resource_uri = resource_uri
-        self.client_id = client_id
         self._access_token = access_token
-        self.client_certificate = kwargs.get('client_certificate')
-        self.certificate_footprint = kwargs.get('certificate_footprint')
         self._session = requests.Session()
 
     def __repr__(self):
-        return '<%s %s authority_host_uri=%r, tenant ID=%r, resource URI=%r, client ID=%r>' % (self.__class__.__name__, id(self), self.authority_host_uri, self.tenant, self.resource_uri, self.client_id)
+        return '<%s %s resource URI=%r>' % (self.__class__.__name__, id(self), self.resource_uri)
 
     def request(self, uri, **kwargs):
         """
@@ -116,10 +66,9 @@ class GraphAPI(object):
             url = '%s/%s/%s' % (self.resource_uri, '%s' % version, uri)
         else:
             url = uri
-        token = str(self._access_token)
         content_type = kwargs.pop('content_type', 'application/json')
         headers = {
-            'Authorization': token,
+            'Authorization': self._access_token,
             'Content-Type': content_type
         }
         method_specific_headers = kwargs.pop('headers', dict())
@@ -128,7 +77,7 @@ class GraphAPI(object):
         try:
             response = self._session.request(method, url, headers=headers, **kwargs)
         except Exception as e:
-            message = '%r %r request unsuccessful: %r' % (url, method, e.message)
+            message = '%r %r request unsuccessful: %r' % (url, method, e)
             logger.error(message, exc_info=1)
             code = getattr(e, 'code', None)
             raise exception.MicrosoftException(code, message)
@@ -145,47 +94,3 @@ class GraphAPI(object):
             logger.error(error)
             raise exception.MicrosoftException(code, message)
         return data
-
-    @staticmethod
-    def _authenticate_via_certificate(authority_host_uri, tenant, resource_uri, client_id, client_certificate, certificate_thumbprint):
-        authority_uri = '%s/%s' % (authority_host_uri, tenant)
-        try:
-            context = adal.AuthenticationContext(authority_uri, api_version=None)
-            data = context.acquire_token_with_client_certificate(resource_uri, client_id, client_certificate, certificate_thumbprint)
-        except adal.adal_error.AdalError as e:
-            if isinstance(e.error_response, dict):
-                code = e.error_response.get('error_codes')
-                message = e.error_response['error_description']
-            else:
-                code = e.error_response
-                message = str(e)
-            logger.error(repr(e), exc_info=True)
-            raise exception.MicrosoftAuthenticationException(code, message)
-        except Exception as e:
-            raise e
-        else:
-            access_token = Token.from_api(data)
-            return access_token
-
-    @classmethod
-    def from_certificate(cls, authority_host_uri, tenant, resource_uri, client_id, client_certificate, certificate_thumbprint):
-        """
-        Creates an authenticated instance using an SSL certificate
-
-        Parameters:
-            authority_host_uri (str):  The service to login through
-            tenant (str): The tenant ID of the instance
-            resource_uri (str): The host of the API service
-            client_id (str):  The client ID
-            client_certificate (str): The contents of the authenticating SSL certificate
-            client_thumbprint (str): The thumbprint corresponding to the client_certificate
-
-        Returns:
-            GraphAPI:  The authenticated API instance
-
-        Raises:
-            MicrosoftAuthenticationException: failed to authenticate using the provided parameters
-            Exception: An unknown error occurred
-        """
-        access_token = cls._authenticate_via_certificate(authority_host_uri, tenant, resource_uri, client_id, client_certificate, certificate_thumbprint)
-        return cls(authority_host_uri, tenant, resource_uri, client_id, access_token, client_certificate=client_certificate, certificate_thumbprint=certificate_thumbprint)

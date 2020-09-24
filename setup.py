@@ -21,7 +21,7 @@ setup(
         'Source': 'https://github.com/WMInfoTech/python-msgraph',
         'Tracker': 'https://github.com/WMInfoTech/python-msgraph/issues'
     },
-    install_requires=['adal>=1.2.2', 'requests>=2.12.0'],
+    install_requires=['msal>=1.5.0', 'requests>=2.12.0'],
     options={
         'bdist_wheel': {
             'universal': True

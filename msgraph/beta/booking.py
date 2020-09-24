@@ -1,5 +1,6 @@
 import logging
 from msgraph import base
+from msgraph import calendar
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,12 @@ class Appointment(base.Base):
     def from_api(cls, data):
         id = data['id']
         start = data['start']
+        if start:
+            start = calendar.DateTime.from_api(start)
+
         end = data['end']
+        if end:
+            end = calendar.DateTime.from_api(end)
         duration = data['duration']
         customer_id = data['customerId']
         customer_name = data['customerName']
@@ -69,13 +75,13 @@ class Appointment(base.Base):
         invoice_amount = data['invoiceAmount']
         invoice_date = data['invoiceDate']
         prebuffer = data['preBuffer']
-        postbuffer = data['postbuffer']
+        postbuffer = data['postBuffer']
         price_type = data['priceType']
         price = data['price']
         reminders = data['reminders']
         staff_member_ids = data['staffMemberIds']
         opt_out_of_customer_email = data['optOutOfCustomerEmail']
-        return cls(id, start, end, duration, customer_id, customer_name, customer_email_address, customer_location, customer_phone, customer_notes, service_id, service_name, service_location, service_notes, invoice_id, invoice_url, invoice_status, invoice_amount, invoice_date, prebuffer, postbuffer, price_type, price, price, price_type, reminders,  staff_member_ids, opt_out_of_customer_email)
+        return cls(id, start, end, duration, customer_id, customer_name, customer_email_address, customer_location, customer_phone, customer_notes, service_id, service_name, service_location, service_notes, invoice_id, invoice_url, invoice_status, invoice_amount, invoice_date, prebuffer, postbuffer, price_type, price, reminders,  staff_member_ids, opt_out_of_customer_email)
 
     @classmethod
     def get(cls, api, business, **kwargs):
@@ -163,7 +169,7 @@ class Business(base.Base):
             output = cls.from_api(data)
         else:
             data = api.request(uri, **kwargs)
-            output = [cls.from_api(data) for item in data.get('value', [])]
+            output = [cls.from_api(item) for item in data.get('value', [])]
         return output
 
 

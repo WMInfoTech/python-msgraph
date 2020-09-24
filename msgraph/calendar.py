@@ -324,9 +324,10 @@ class Range(base.Base):
 
 
 class DateTime(base.Base):
-    __slots__ = ('date_time', 'time_zone')
+    __slots__ = ('raw_date_time', 'date_time', 'time_zone')
 
-    def __init__(self, date_time, time_zone):
+    def __init__(self, raw_date_time, date_time, time_zone):
+        self.raw_date_time = raw_date_time
         self.date_time = date_time
         self.time_zone = time_zone
 
@@ -342,10 +343,10 @@ class DateTime(base.Base):
 
     @classmethod
     def from_api(cls, data):
-        date_time = data['dateTime']
-        date_time = cls.parse_date_time(date_time[:26])
+        raw_date_time = data['dateTime']
+        date_time = cls.parse_date_time(raw_date_time[:26])
         time_zone = data['timeZone']
-        return cls(date_time, time_zone)
+        return cls(raw_date_time, date_time, time_zone)
 
 
 class Event(base.Base):
@@ -637,7 +638,7 @@ class Event(base.Base):
         return output
 
     @classmethod
-    def instances(cls, api, event, **kwargs):
+    def event_instances(cls, api, event, **kwargs):
         """
         Fetch the Events from the API endpoint
 

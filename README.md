@@ -16,22 +16,75 @@ or, to build locally and install:
 ## Usage
 
 ### Authentication
+This library supports multiple approaches to authentication using [msal](https://github.com/AzureAD/microsoft-authentication-library-for-python)
 
-The library currently supports connecting to the API using an SSL certificate:
+#### Username & Password
 
 ```python
-from msgraph import api
+import msal
 
-authority_host_uri = 'https://login.microsoftonline.com'
+authority_domain = 'https://login.microsoftonline.com'
 tenant = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
+authority = '%s/%s' % (authority_domain, tenant)
 resource_uri = 'https://graph.microsoft.com'
 client_id = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
-client_thumbprint = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-client_certificate = ''
-api_instance = api.GraphAPI.from_certificate(authority_host_uri, tenant, resource_uri, client_id, client_certificate, client_thumbprint)
+thumbprint = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+scopes = [resource_uri + "/.default"]
+
+app = msal.PublicClientApplication(client_id, authority=authority)
+
+# check the cache to see if this end user has signed in before
+accounts = app.get_accounts(username=username)
+
+if accounts:
+    logging.info("Account(s) exists in cache, probably with token too")
+    result = app.acquire_token_silent(scopes, account=accounts[0])
+
+if not accounts or not result:
+    logging.info("No suitable token exists in cache")
+    result = app.acquire_token_by_username_password(username, password, scopes=scopes)
+
+access_token = result.get('access_token')
+if not access_token:
+    raise ValueError('access_token not provided: %r' % result)
+
+api_instance = api.GraphAPI(resource_uri, access_token)
 ```
 
-**NOTE**:  When a `client_certificate` is changed, the `client_thumbprint` and `client_id` values must also be changed
+#### Client Certificate
+```python
+import msal
+import os
+
+authority_domain = 'https://login.microsoftonline.com'
+tenant = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
+authority = '%s/%s' % (authority_domain, tenant)
+resource_uri = 'https://graph.microsoft.com'
+client_id = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
+thumbprint = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+scopes = [resource_uri + "/.default"]
+
+with open('path/to/cert.pem', 'r') as input_file:
+    private_key = input_file.read()
+client_credential = dict(thumbprint=thumbprint, private_key=private_key)
+
+msgraph_app = msal.ConfidentialClientApplication(client_id, authority=authority, client_credential=client_credential)
+
+# lookup a token from cache
+result = msgraph_app.acquire_token_silent(scopes, account=None)
+
+if not result:
+    print("No suitable token exists in cache. Fetching new  token from AAD.")
+    result = msgraph_app.acquire_token_for_client(scopes=scopes)
+
+if 'access_token' not in result:
+    raise ValueError('access_token not provided: %r' % result)
+
+access_token = result['access_token']
+api_instance = api.GraphAPI(resource_uri, access_token)
+```
+
+For more example on how to authenticate, see [AzureAD/microsoft-authentication-library-for-python](https://github.com/AzureAD/microsoft-authentication-library-for-python/tree/dev/sample)
 
 ### Using the API to fetch Users
 
