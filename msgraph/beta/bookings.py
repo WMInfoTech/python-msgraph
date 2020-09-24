@@ -82,12 +82,88 @@ class Appointment(base.Base):
         appointment = kwargs.pop('appointment', None)
         if appointment:
             uri = 'bookingBusinesses/%s/appointments/%s' % (business, appointment)
-            data = api.request(uri)
+            data = api.request(uri, version='beta')
             output = cls.from_api(data)
         else:
             uri = 'bookingBusinesses/%s/appointments' % business
+            kwargs.setdefault('version', 'beta')
             data = api.request(uri, **kwargs)
             output = [cls.from_api(row) for row in data['value']]
+        return output
+
+
+class Business(base.Base):
+    __slots__ = ('id', 'display_name', 'type', 'address', 'phone', 'email', 'is_published', 'business_hours', 'public_url', 'website_url', 'default_currency_iso', 'scheduling_policy')
+
+    def __init__(self, id, display_name, type, address, phone, email, is_published, business_hours, public_url, website_url, default_currency_iso, scheduling_policy):
+        self.id = id
+        self.display_name = display_name
+        self.type = type
+        self.address = address
+        self.phone = phone
+        self.email = email
+        self.is_published = is_published
+        self.business_hours = business_hours
+        self.public_url = public_url
+        self.website_url = website_url
+        self.default_currency_iso = default_currency_iso
+        self.scheduling_policy = scheduling_policy
+
+    def __str__(self):
+        return self.id
+
+    def __repr__(self):
+        return '<%s %s id=%r, display_name=%r>' % (self.__class__.__name__, id(self), self.id, self.display_name)
+
+    def update(self, api, **kwargs):
+        uri = 'bookingBusinesses/%s' % self.id
+        kwargs.setdefault('version', 'beta')
+        data = dict(displayName=self.display_name, businessType=self.type, email=self.email, phone=self.phone, address=self.address, webSiteUrl=self.website_url, businessHours=self.business_hours)
+        api.request(uri, json=data, method='PATCH', **kwargs)
+
+    def delete(self, api, **kwargs):
+        uri = 'bookingBusinesses/%s' % self.id
+        kwargs.setdefault('version', 'beta')
+        api.request(uri, method='DELETE', **kwargs)
+
+    def publish(self, api, **kwargs):
+        uri = 'bookingBusinesses/%s/publish' % self.id
+        kwargs.setdefault('version', 'beta')
+        api.request(uri, method='POST', **kwargs)
+
+    def unpublish(self, api, **kwargs):
+        uri = 'bookingBusinesses/%s/unpublish' % self.id
+        kwargs.setdefault('version', 'beta')
+        api.request(uri, method='POST', **kwargs)
+
+    @classmethod
+    def from_api(cls, data):
+        id = data['id']
+        display_name = data['displayName']
+        type = data.get('type')
+        address = data.get('address')
+        phone = data.get('phone')
+        email = data.get('email')
+        is_published = data.get('isPublished')
+        business_hours = data.get('businessHours')
+        public_url = data.get('publicUrl')
+        website_url = data.get('websiteUrl')
+        default_currency_iso = data.get('defaultCurrencyIso')
+        scheduling_policy = data.get('schedulingPolicy')
+        return cls(id, display_name, type, address, phone, email, is_published, business_hours, public_url, website_url, default_currency_iso, scheduling_policy)
+
+    @classmethod
+    def get(cls, api, **kwargs):
+        kwargs.setdefault('version', 'beta')
+        business = kwargs.pop('business', None)
+        uri = 'bookingBusinesses'
+        if business:
+            uri = 'bookingBusinesses/%s' % business
+            data = api.request(uri, **kwargs)
+            output = cls.from_api(data)
+        else:
+            data = api.request(uri, **kwargs)
+            output = [cls.from_api(data) for item in data.get('value', [])]
         return output
 
 
@@ -105,17 +181,19 @@ class Customer(base.Base):
     def __repr__(self):
         return '<%s %s id=%r, display_name=%r, email_address=%r>' % (self.__class__.__name__, id(self), self.id, self.display_name, self.email_address)
 
-    def update(self, api, business):
+    def update(self, api, business, **kwargs):
         uri = 'bookingBusinesses/%s/customers/%r' % (business, self.id)
         request_data = dict(displayName=self.display_name, emailAddress=self.email_address)
-        data = api.request(uri, json=request_data, method='PATCH')
+        kwargs.setdefault('version', 'beta')
+        data = api.request(uri, json=request_data, method='PATCH', **kwargs)
         instance = self.from_api(data)
         self.display_name = instance.display_name
         self.email_address = instance.email_address
 
-    def delete(self, api, business):
+    def delete(self, api, business, **kwargs):
         uri = 'bookingBusinesses/%s/customers/%r' % (business, self.id)
-        api.request(uri, method='DELETE')
+        kwargs.setdefault('version', 'beta')
+        api.request(uri, method='DELETE', **kwargs)
 
     @classmethod
     def from_api(cls, data):
@@ -126,23 +204,25 @@ class Customer(base.Base):
 
     @classmethod
     def get(cls, api, business, **kwargs):
+        kwargs.setdefault('version', 'beta')
         customer = kwargs.pop('customer', None)
         if customer:
             uri = 'bookingBusinesses/%s/customers/%s' % (business, customer)
-            data = api.request(uri)
+            data = api.request(uri, **kwargs)
             output = cls.from_api(data)
         else:
             uri = 'bookingBusinesses/%s/customers' % business
             params = dict(**kwargs)
-            data = api.request(uri, params=params)
+            data = api.request(uri, params=params, **kwargs)
             output = [cls.from_api(row) for row in data['value']]
         return output
 
     @classmethod
-    def create(cls, api, business, display_name, email_address):
+    def create(cls, api, business, display_name, email_address, **kwargs):
+        kwargs.setdefault('version', 'beta')
         uri = 'bookingBusinesses/%s/customers' % business
         request_data = dict(displayName=display_name, emailAddress=email_address)
-        data = api.request(uri, json=request_data, method='POST')
+        data = api.request(uri, json=request_data, method='POST', **kwargs)
         return cls.from_api(data)
 
 
@@ -172,6 +252,17 @@ class Service(base.Base):
     def __repr__(self):
         return '<%s %s id=%r, display_name=%r, email_address=%r, description=%r, is_hidden_from_customers=%r>' % (self.__class__.__name__, id(self), self.display_name, self.email_address, self.description, self.is_hidden_from_customers)
 
+    def update(self, api, business, **kwargs):
+        uri = 'bookingBusinesses/%s/services/%s' % (business, self.id)
+        kwargs.setdefault('version', 'beta')
+        data = dict(id=self.id, displayName=self.display_name, description=self.description, emailAddress=self.email_address, isHiddenFromCustomers=self.is_hidden_from_customers, notes=self.notes, preBuffer=self.prebufffer, postBuffer=self.postbuffer, schedulingPolicy=self.scheduling_policy, staffMemberIds=self.staff_member_ids, defaultDuration=self.default_duration, defaultLocation=self.default_location, defaultPrice=self.default_price, defaultPriceType=self.default_price_type, defaultReminders=self.default_reminders)
+        api.request(uri, json=data, method='PATCH', **kwargs)
+
+    def delete(self, api, business, **kwargs):
+        uri = 'bookingBusinesses/%s/services/%s' % (business, self.id)
+        kwargs.setdefault('version', 'beta')
+        api.request(uri, method='DELETE', **kwargs)
+
     @classmethod
     def from_api(cls, data):
         id = data['id']
@@ -193,15 +284,16 @@ class Service(base.Base):
 
     @classmethod
     def get(cls, api, business, **kwargs):
+        kwargs.setdefault('version', 'beta')
         service = kwargs.pop('service', None)
         if service:
             uri = 'bookingBusinesses/%s/services/%s' % (business, service)
-            data = api.request(uri)
+            data = api.request(uri, **kwargs)
             output = cls.from_api(data)
         else:
             uri = 'bookingBusinesses/%s/services' % business
             params = dict(**kwargs)
-            data = api.request(uri, params=params)
+            data = api.request(uri, params=params, **kwargs)
             output = [cls.from_api(row) for row in data['value']]
         return output
 
@@ -225,6 +317,17 @@ class StaffMember(base.Base):
     def __repr__(self):
         return '<%s %s id=%r, display_name=%r, email_address=%r role=%r>' % (self.__class__.__name__, id(self), self.id, self.display_name, self.email_address, self.role)
 
+    def update(self, api, business, **kwargs):
+        uri = 'bookingBusinesses/%s/staffMembers/%s' % (business, self.id)
+        kwargs.setdefault('version', 'beta')
+        data = dict(displayName=self.display_name, role=self.role, emailAddress=self.email_address, workingHours=[item.to_dict() for item in self.working_hours], webSiteUrl=self.website_url, useBusinessHours=self.use_business_hours, colorIndex=self.color_index, availabilityIsAffectedByPersonalCalendar=self.availability_is_affected_by_personal_calendar)
+        api.request(uri, json=data, method='PATCH', **kwargs)
+
+    def delete(self, api, business, **kwargs):
+        uri = 'bookingBusinesses/%s/staffMembers/%s' % (business, self.id)
+        kwargs.setdefault('version', 'beta')
+        api.request(uri, method='DELETE', **kwargs)
+
     @classmethod
     def from_api(cls, data):
         id = data['id']
@@ -239,20 +342,22 @@ class StaffMember(base.Base):
 
     @classmethod
     def get(cls, api, business, **kwargs):
+        kwargs.setdefault('version', 'beta')
         staff_member = kwargs.pop('service', None)
         if staff_member:
             uri = 'bookingBusinesses/%s/staffMembers/%s' % (business, staff_member)
-            data = api.request(uri)
+            data = api.request(uri, **kwargs)
             output = cls.from_api(data)
         else:
             uri = 'bookingBusinesses/%s/staffMembers' % business
             params = dict(**kwargs)
-            data = api.request(uri, params=params)
+            data = api.request(uri, params=params, **kwargs)
             output = [cls.from_api(row) for row in data['value']]
         return output
 
     @classmethod
     def create(cls, api, business, display_name, email_address, role, **kwargs):
+        kwargs.setdefault('version', 'beta')
         uri = 'bookingBusinesses/%s/staffMembers' % business
 
         working_hours_list = []
@@ -261,7 +366,7 @@ class StaffMember(base.Base):
                 working_hours = working_hours.to_dict()
             working_hours_list.append(working_hours)
         request_data = dict(displayName=display_name, emailAddress=email_address, role=role, workingHours=working_hours_list)
-        data = api.request(uri, json=request_data, method='POST')
+        data = api.request(uri, json=request_data, method='POST', **kwargs)
         return cls.from_api(data)
 
 

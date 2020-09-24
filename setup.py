@@ -14,7 +14,7 @@ setup(
     author='Doug Fenstermacher',
     author_email='dpfens@wm.edu',
     url='https://github.com/WMInfoTech/python-msgraph',
-    packages=['msgraph'],
+    packages=['msgraph', 'msgraph.beta'],
     keywords='microsoft, graph, api, group, calendar, event, site, list, listitem, drive, file',
     license='Apache2',
     project_urls={

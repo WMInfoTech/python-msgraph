@@ -110,10 +110,10 @@ class GraphAPI(object):
         Raises:
             MicrosoftException: The API call was not completed successsfully
         """
-        version = kwargs.get('version', '1.0')
+        version = kwargs.pop('version', 'v1.0')
         method = kwargs.pop('method', 'GET')
         if self.resource_uri not in uri:
-            url = '%s/%s/%s' % (self.resource_uri, 'v%s' % version, uri)
+            url = '%s/%s/%s' % (self.resource_uri, '%s' % version, uri)
         else:
             url = uri
         token = str(self._access_token)
