@@ -256,7 +256,7 @@ class Service(base.Base):
         return self.id
 
     def __repr__(self):
-        return '<%s %s id=%r, display_name=%r, email_address=%r, description=%r, is_hidden_from_customers=%r>' % (self.__class__.__name__, id(self), self.display_name, self.email_address, self.description, self.is_hidden_from_customers)
+        return '<%s %s id=%r, display_name=%r, email_address=%r, description=%r, is_hidden_from_customers=%r>' % (self.__class__.__name__, id(self), self.id, self.display_name, self.email_address, self.description, self.is_hidden_from_customers)
 
     def update(self, api, business, **kwargs):
         uri = 'bookingBusinesses/%s/services/%s' % (business, self.id)
@@ -271,10 +271,11 @@ class Service(base.Base):
 
     @classmethod
     def from_api(cls, data):
+        print(data)
         id = data['id']
         display_name = data['displayName']
         description = data['description']
-        email_address = data['emailAddress']
+        email_address = data.get('emailAddress')
         is_hidden_from_customers = data['isHiddenFromCustomers']
         notes = data['notes']
         prebuffer = data['preBuffer']
@@ -349,7 +350,7 @@ class StaffMember(base.Base):
     @classmethod
     def get(cls, api, business, **kwargs):
         kwargs.setdefault('version', 'beta')
-        staff_member = kwargs.pop('service', None)
+        staff_member = kwargs.pop('staff_member', None)
         if staff_member:
             uri = 'bookingBusinesses/%s/staffMembers/%s' % (business, staff_member)
             data = api.request(uri, **kwargs)
