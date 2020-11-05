@@ -16,21 +16,23 @@ class GraphAPI(object):
         resource_uri (str): The host of the API service
 
     Example:
-        from msgraph import api
-        authority = 'https://login.microsoftonline.com'
-        tenant = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
-        resource_uri = 'https://graph.microsoft.com'
-        client_id = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
-        client_thumbprint = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-        client_certificate = '-----BEGIN RSA PRIVATE KEY-----...'
-
-        client_credential = dict(thumbprint=client_thumbprint, private_key=client_certificate)
-        app = msal.ConfidentialClientApplication(client_id, authority=authority_host_uri, client_credential=client_credential)
-
-        access_token_data = app.acquire_token_for_client(scopes=scope)
-        if 'access_token' not in access_token_data:
-            raise ValueError(access_token_data['error_description'])
-        instance = api.GraphAPI(resource_uri, access_token)
+        >>> from msgraph import api
+        >>> authority = 'https://login.microsoftonline.com'
+        >>> tenant = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
+        >>> resource_uri = 'https://graph.microsoft.com'
+        >>> client_id = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'
+        >>> client_thumbprint = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+        >>> client_certificate = '-----BEGIN RSA PRIVATE KEY-----...'
+        >>>
+        >>> client_credential = dict(thumbprint=client_thumbprint, private_key=client_certificate)
+        >>> app = msal.ConfidentialClientApplication(client_id, authority=authority_host_uri, client_credential=client_credential)
+        >>>
+        >>> access_token_data = app.acquire_token_for_client(scopes=scope)
+        >>> if 'access_token' not in access_token_data:
+        >>>     raise ValueError(access_token_data['error_description'])
+        >>> instance = api.GraphAPI(resource_uri, access_token)
+        >>> 
+        >>> raw_output = instance.request('users/johndoe@example.com')
     """
 
     def __init__(self, resource_uri, access_token, **kwargs):
