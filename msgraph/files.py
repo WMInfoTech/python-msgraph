@@ -1,5 +1,6 @@
 import logging
 from msgraph import base
+from mspgraph import exception
 
 logger = logging.getLogger(__name__)
 
@@ -507,3 +508,103 @@ class DriveItem(base.Base):
         uri += '/root'
         data = api.request(uri)
         return cls.from_api(data)
+
+
+class Session(base.Base):
+    __slots__ = ('upload_url', 'expiration_datetime', 'file_size')
+    FAIL = 'fail'
+    REPLACE = 'replace'
+    RENAME = 'rename'
+
+    def __init__(self, upload_url, expiration_datetime, file_size):
+        self.upload_url = upload_url
+        self.expiration_datetime = expiration_datetime
+        self.file_size = file_size
+        self.next_expected_ranges = None
+        self.is_complete = False
+
+    def upload(self, api, file, chunk_size=327680):
+        """
+        Uploads a file to Microsoft drive in chunks
+        """
+        while self.is_incomplete:
+            chunk = file.read(chunk_size)
+            output = self.upload_part(api, chunk)
+        return output
+
+    def upload_part(self, api, content):
+        content_size = len(content)
+        if self.next_expected_ranges:
+            lower_bound, upper_bound = self.next_expected_ranges
+            if content_size < lower_bound or content_size > upper_bound:
+                raise exception.MicrosoftException('UPLOAD', 'content size (%r) not in expected range (%r-%r)' % (content_size, lower_bound, upper_bound))
+
+        headers = {
+            'Content-Length': content_size,
+        }
+        response = api.request(self.upload_url, data=content, headers=headers, method='PUT')
+
+        return self._update_state(response)
+
+    def _update_state(self, data):
+        is_incomplete = 'expirationDateTime' in data and 'nextExpectedRanges' in data
+        if is_incomplete:
+            raw_expiration_datetime = data['expirationDateTime']
+            self.expiration_datetime = self.parse_date_time(raw_expiration_datetime)
+            raw_next_expected_ranges = data['nextExpectedRanges'][0].split('-')
+
+            raw_lower_bound = raw_next_expected_ranges[0]
+            lower_bound = int(raw_lower_bound)
+
+            raw_upper_bound = raw_next_expected_ranges[1]
+            upper_bound = int(raw_upper_bound) if raw_upper_bound else float('inf')
+            self.next_expected_ranges = (lower_bound, upper_bound)
+        else:
+            self.is_complete = True
+        return data
+
+    @classmethod
+    def from_api(cls, data):
+        upload_url = data['uploadUrl']
+        raw_expiration_datetime = data['expirationDateTime']
+        file_size = data['fileSize']
+        expiration_datetime = cls.parse_date_time(raw_expiration_datetime)
+        return cls(upload_url, expiration_datetime, file_size)
+
+    @classmethod
+    def create(cls, api, item, **kwargs):
+        group = kwargs.get('group')
+        site = kwargs.get('site')
+        drive = kwargs.get('drive')
+        user = kwargs.get('user')
+        if drive:
+            uri = 'drives/%s/items/%s/createUploadSession' % (drive, item)
+        elif group:
+            uri = 'groups/%s/drive/items/%s/createUploadSession' % (group, item)
+        elif site:
+            uri = 'sites/%s/drive/items/%s/createUploadSession' % (site, item)
+        elif user:
+            uri = 'users/%s/drive/items/%s/createUploadSession' % (user, item)
+        else:
+            uri = 'me/drive/items/%s/createUploadSession' % item
+
+        item_data = {
+            "@odata.type": "microsoft.graph.driveItemUploadableProperties",
+        }
+        item_parameters = {
+            'conflict_behavior': 'conflictBehavior',
+            'file_size': 'fileSize',
+            'file_name': 'name',
+            'description': 'description'
+        }
+        for key in item_parameters:
+            value = kwargs.get(key)
+            if value:
+                parameter = item_parameters[key]
+                item_data[parameter] = value
+
+        defer_commit = kwargs.get('defer_commit', False)
+        data = dict(item=item_data, defer_commit=defer_commit)
+        response = api.request(uri, json=data, method='POST')
+        response['fileSize'] = item_data.get('fileSize')
+        return cls.from_api(response)
