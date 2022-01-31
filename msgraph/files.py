@@ -507,3 +507,24 @@ class DriveItem(base.Base):
         uri += '/root'
         data = api.request(uri)
         return cls.from_api(data)
+
+    @classmethod
+    def get_by_path(cls, api, path, **kwargs):
+        group = kwargs.get('group')
+        site = kwargs.get('site')
+        drive = kwargs.get('drive')
+        user = kwargs.get('user')
+
+        if drive:
+            uri = 'drives/%s' % drive
+        elif group:
+            uri = 'groups/%s/drive' % group
+        elif site:
+            uri = 'sites/%s/drive' % site
+        elif user:
+            uri = 'users/%s/drive' % user
+        else:
+            uri = 'me/drive'
+        uri += '/root:/%s' % path
+        data = api.request(uri)
+        return cls.from_api(data)
