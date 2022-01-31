@@ -316,6 +316,42 @@ class DriveItem(base.Base):
         logger.info('Deleted file %r from %r', self.name, uri)
 
     @classmethod
+    def versions(self, api, **kwargs):
+        group = kwargs.get('group')
+        site = kwargs.get('site')
+        drive = kwargs.get('drive')
+        user = kwargs.get('user')
+
+        if drive:
+            uri = 'drives/%s' % drive
+        elif group:
+            uri = 'groups/%s/drive' % group
+        elif site:
+            uri = 'sites/%s/drive' % site
+        elif user:
+            uri = 'users/%s/drive' % user
+        else:
+            uri = 'me/drive'
+        uri += '/items/%s/versions' % self.id
+        return api.request(uri)
+
+    @classmethod
+    def analytics(self, api, **kwargs):
+        site = kwargs.get('site')
+        list = kwargs.get('list')
+        drive = kwargs.get('drive')
+
+        if drive:
+            uri = 'drives/%s' % drive
+        elif site and list:
+            uri = 'sites/%s/lists/%s' % (site, list)
+        else:
+            raise ValueError('Must provide either a drive or site & list')
+
+        uri += '/items/%s/analytics' % self.id
+        return api.request(uri)
+
+    @classmethod
     def from_api(cls, data):
         id = data['id']
         name = data['name']
